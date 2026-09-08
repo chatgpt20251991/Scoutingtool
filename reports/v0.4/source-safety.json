@@ -1,0 +1,6 @@
+{
+  "candidate_files": 239,
+  "credential_pattern_files": [],
+  "sensitive_paths": [],
+  "scope": "Pattern/path scan of prospective Git files; deliberately synthetic test credentials are not live accounts. Visual review of screenshots performed separately."
+}

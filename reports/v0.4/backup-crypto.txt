@@ -1,0 +1,13 @@
+✔ multi-megabyte encrypted backups validate canonical base64 without recursive regular expressions (1367.2119ms)
+✔ encrypted backups roundtrip Unicode and produce independent salts, IVs and ciphertext without names in metadata (1751.0577ms)
+✔ wrong passphrases and altered authenticated ciphertext never return partially decoded data (4020.3424ms)
+✔ backup crypto refuses caller-selected algorithms, malformed base64, invalid passphrases and excess payloads (681.3078ms)
+✔ backup crypto has a bounded work queue and recovers after rejected operations (3284.5519ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 11623.5082

@@ -1,0 +1,15 @@
+# Versleutelde back-upbestanden
+
+De v0.4-download is een JSON-envelop met extensie `.osbackup`. Alleen formaataanduiding, vaste algoritmekeuze, salt, IV, authenticatietag en ciphertext staan buiten de versleuteling. Clubnamen, scoutinggegevens en eventuele offline server-accountinhoud staan binnen de ciphertext. Een clubback-up bevat geen accountdatabase.
+
+De implementatie gebruikt Node's ingebouwde `scrypt` en `aes-256-gcm`: willekeurige salt van 16 bytes, IV van 12 bytes, authenticatietag van 16 bytes; scrypt N=131072, r=8, p=1 met een 32-byte sleutel en maximaal 160 MiB cryptografisch werkgeheugen. De vaste formaatheader wordt als AAD meegenomen. De algoritmen en kostenparameters zijn niet instelbaar vanuit het bestand. Dit gebruikt de [Node crypto-API](https://nodejs.org/api/crypto.html) en de voorkeur voor geauthenticeerde encryptie in [OWASP Cryptographic Storage](https://cheatsheetseries.owasp.org/cheatsheets/Cryptographic_Storage_Cheat_Sheet.html), geraadpleegd op 8 september 2026.
+
+Een wachtzin bevat 15–128 Unicode-tekens, maximaal 512 UTF-8-bytes. Spaties en samengestelde Unicode blijven exact zoals ingevoerd; er vindt geen stille normalisatie plaats. De sleutel wordt niet samen met het bestand opgeslagen. Een vergeten wachtzin kan de applicatie niet herstellen. Kies voor een back-up een afzonderlijke wachtzin en bewaar deze buiten het back-upbestand.
+
+Verkeerde wachtzinnen, gewijzigde ciphertext, IV, salt of tag leveren dezelfde fout op; er wordt geen gedeeltelijk gedecodeerde inhoud teruggegeven. Onbekende versies/algoritmen en niet-canonieke base64 worden geweigerd. Binnengekomen inhoud krijgt daarna domeinvalidatie van schema, hashes, club, rechten, jobs en limieten. GCM alleen bewijst niet dat aangeleverde voetbalgegevens waar zijn of dat een bestand afkomstig is van een vertrouwde scout. Wie de wachtzin kent kan een nieuwe versleutelde inhoud maken.
+
+De grenzen zijn 32 MiB onversleutelde JSON en 46 MiB voor de buitenste envelop. Cryptografisch werk wordt geserialiseerd met maximaal 4 geaccepteerde bewerkingen. De HTTP-laag begrenst tevens gelijktijdige back-upverzoeken en herstelvoorbeelden. Een herstelvoorbeeld blijft maximaal 5 minuten in procesgeheugen en is gebonden aan sessie, gebruiker en club. Wachtzinnen worden niet in logs, bestanden, sessies of browseropslag bewaard; gebruikte sleutelbuffers worden gewist. JavaScript biedt geen garantie dat alle tijdelijke tekstkopieën direct uit fysiek geheugen verdwijnen.
+
+De actieve serverstate en private lokale kopie vóór een clubherstel behouden hun bestaande bestandsrechten; dit is geen schijfversleuteling. Er is ook geen publieke TLS-hosting toegevoegd. De lokale accountserver blijft op loopback. Downloadrechten worden voor behouden broninhoud opnieuw gecontroleerd; een back-up vormt geen uitweg rond verlopen of ontbrekende bronrechten.
+
+De tests omvatten Unicode, meerdere MiB inhoud, verschillende salts/IV's, verkeerde wachtzinnen, wijziging van alle cryptografische velden, ongeldige algoritmen/base64, groottelimieten en een volle cryptografische wachtrij. De uiteindelijke uitgevoerde resultaten staan in `reports/v0.4/`.

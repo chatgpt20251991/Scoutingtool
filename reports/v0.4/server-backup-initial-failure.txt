@@ -1,0 +1,29 @@
+Command: node --test tests/server-backup.test.mjs
+Exit code: 1
+
+✔ full encrypted server backup restores real login and isolated scouting after fresh restart (16141.7277ms)
+✔ a running or stale server lock is never stolen and source files stay unchanged (5194.4566ms)
+✔ queued jobs and pending or inconsistent migration claims refuse backup without processing jobs (3739.6955ms)
+✔ bad passwords and tampering fail before any destination is created (7505.7738ms)
+✔ manifest path forgery, missing clubs, hashes and invitations are rejected after decryption (11188.2433ms)
+✔ current rights apply to retained rollback history during create, preview and restore (5357.5272ms)
+✖ unknown files, orphan clubs, malformed accounts and oversized accounts fail closed (2601.9837ms)
+✔ existing or unsafe restore destinations remain unchanged and mismatched confirmation cannot restore (6494.987ms)
+✔ hardlinked account files and junction organization folders are refused (2277.5811ms)
+✔ unwritten new organizations are explicitly backed up as empty while source files stay unchanged (3974.093ms)
+✔ concurrent full restores publish once and leave no owned staging directories (5481.9632ms)
+✔ CLI supports private-file create, inspect and confirmed restore without plaintext stdout or overwrites (8705.1142ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 11
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 79436.8484
+
+✖ failing tests:
+
+test at tests\server-backup.test.mjs:197:1
+✖ unknown files, orphan clubs, malformed accounts and oversized accounts fail closed (2601.9837ms)
+  [SystemError [ERR_FS_EISDIR]: Path is a directory: rm returned EISDIR (is a directory) C:\Users\Han23\AppData\Local\Temp\omniscout-server-backup-3PiAUJ\source\organizations\e61b7017-b539-4eb2-8edf-7f180483bc2a] { code: 'ERR_FS_EISDIR', info: { code: 'EISDIR', message: 'is a directory', path: 'C:\\Users\\Han23\\AppData\\Local\\Temp\\omniscout-server-backup-3PiAUJ\\source\\organizations\\e61b7017-b539-4eb2-8edf-7f180483bc2a', syscall: 'rm', errno: 21 }, errno: 21, syscall: 'rm', path: 'C:\\Users\\Han23\\AppData\\Local\\Temp\\omniscout-server-backup-3PiAUJ\\source\\organizations\\e61b7017-b539-4eb2-8edf-7f180483bc2a' }

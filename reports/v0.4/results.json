@@ -1,0 +1,50 @@
+{
+  "executedAt": "2026-09-08T05:39:21.530563+00:00",
+  "version": "0.4.0",
+  "node": {
+    "command": "npm run verify",
+    "log": "node-verify.txt",
+    "tests": 217,
+    "pass": 217,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "python": {
+    "command": "python -m unittest discover -s tests -v",
+    "workingDirectory": "reference/python-prototype",
+    "passed": 62,
+    "log": "python-tests.txt"
+  },
+  "browser": {
+    "engine": "Microsoft Edge",
+    "pageErrors": 0,
+    "accounts": 12,
+    "legacy": 10,
+    "recovery": 11,
+    "offlineEdge": 10,
+    "total": 43
+  },
+  "cli": {
+    "command": "npm run test:cli",
+    "passed": 1,
+    "log": "cli-startup.txt"
+  },
+  "serverBackup": {
+    "includedInNode": true,
+    "tests": 12,
+    "freshRestartLoginAndTwoClubIsolation": true,
+    "log": "server-backup.txt"
+  },
+  "sourcePreservation": {
+    "files": 45,
+    "unchanged": true,
+    "log": "source-preservation.json"
+  },
+  "initialFailuresPreserved": [
+    "browser-recovery-initial-failure.json",
+    "server-backup-initial-failure.txt"
+  ],
+  "productionDeployment": false,
+  "liveProvider": false
+}

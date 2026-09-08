@@ -1,6 +1,6 @@
 # START HIER — Omni-Scout naar Codex en workers
 
-> Actuele uitvoering op 8 september 2026: volledige bronovername en v0.2-import zijn gepubliceerd in PR #1 (https://github.com/chatgpt20251991/Scoutingtool/pull/1). GitHub schrijven werkt nu. V0.3 voegt lokale accounts, clubrollen en gescheiden opslag toe. Actuele status en bewijs: docs/IMPLEMENTATION_STATUS.md, reports/v0.3/ en het eindrapport. Onderstaande verpakkingsstatus en oorspronkelijke opdracht zijn historische context.
+> Actuele uitvoering op 8 september 2026: volledige bronovername en v0.2-import zijn gepubliceerd in PR #1 (https://github.com/chatgpt20251991/Scoutingtool/pull/1). GitHub schrijven werkt nu. V0.3 voegt lokale accounts, clubrollen en gescheiden opslag toe; v0.4 bouwt verder met versleutelde back-ups, gecontroleerd herstel, bewaarinventarisatie en uitnodigingen voor bestaande accounts. Actuele status en bewijs: docs/IMPLEMENTATION_STATUS.md, reports/v0.4/ en het eindrapport. Onderstaande verpakkingsstatus en oorspronkelijke opdracht zijn historische context.
 
 Datum: 8 september 2026. Repositorydoel: `chatgpt20251991/Scoutingtool`.
 

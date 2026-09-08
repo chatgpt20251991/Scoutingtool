@@ -1,0 +1,13 @@
+✔ backup and retention API require current owner, organization and CSRF; no full-server route is exposed (2308.8644ms)
+✔ encrypted club backup previews without writes, rejects stale/cross-club plans, restores once and keeps durable recovery copy (4899.0231ms)
+✔ restore previews expire and are bound to session/user, survive no logout/password rotation, and cannot be reused by a second owner (6252.0293ms)
+✔ backup copy and restore obey current rights while retention preview can still report blocked retained data (2610.448ms)
+✔ existing-account invitation HTTP preview and acceptance preserve account identity and owner-only invite administration (1584.9258ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19054.6686

@@ -83,7 +83,7 @@ async function createLegacyApp({ statePath = null, catalog: demoCatalog = CATALO
         if (selected === 'import' && workspaceState.decisions.concat(workspaceState.tasks).some(item => !catalog.players.some(p => p.id === item.playerId))) fail(403, 'Export bevat verwijzingen naar niet meer beschikbare importgegevens.');
       }
       const workspaceState = workspace(await store.read(), selected);
-      if (route === '/api/health' && req.method === 'GET') return json(200, { ok: true, mode: 'synthetic_demo', version: '0.3.0', liveSources: 0, productionReady: false });
+      if (route === '/api/health' && req.method === 'GET') return json(200, { ok: true, mode: 'synthetic_demo', version: '0.4.0', liveSources: 0, productionReady: false });
       if (route === '/api/session' && req.method === 'GET') return json(200, { csrf, mode: 'local_single_user_demo', supportsImport: true, persistence: statePath ? 'local_file' : 'memory', notice: 'Geen productie-authenticatie. Gebruik synthetische, niet-vertrouwelijke testgegevens.' });
       if (route === '/api/import/sample' && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename="omniscout-import-FICTIEF.json"' });
@@ -188,7 +188,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
   const port = Number(process.env.PORT || 4173);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('PORT moet tussen 1024 en 65535 liggen.');
   const { server, close } = await createApp({ dataDir: resolve(ROOT, '.local'), legacyStatePath: resolve(ROOT, '.local/state.json') });
-  server.listen(port, '127.0.0.1', () => console.log(`\nOmni-Scout 0.3.0 • lokaal prototype\nhttp://127.0.0.1:${port}\nDemo is fictief; importbronverklaringen zijn niet onafhankelijk geverifieerd. Lokale accounts en gescheiden clubs; geen live bronnen of publieke hosting.\nStoppen: Ctrl+C\n`));
+  server.listen(port, '127.0.0.1', () => console.log(`\nOmni-Scout 0.4.0 • lokaal prototype\nhttp://127.0.0.1:${port}\nDemo is fictief; importbronverklaringen zijn niet onafhankelijk geverifieerd. Lokale accounts en gescheiden clubs; geen live bronnen of publieke hosting.\nStoppen: Ctrl+C\n`));
   server.on('error', async error => { console.error(`Opstarten mislukt: ${error.message}`); process.exitCode = 1; await close(); });
   for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, async () => { await close(); process.exit(0); });
 }
