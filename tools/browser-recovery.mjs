@@ -9,7 +9,7 @@ import { openBackup } from '../src/backup/crypto.mjs';
 
 const require = createRequire(import.meta.url), packagePath = process.env.OMNISCOUT_PLAYWRIGHT_PATH || 'playwright';
 const { chromium } = require(packagePath), { expect } = require(join(packagePath, 'test'));
-const reports = resolve('reports/v0.4'), temp = await mkdtemp(join(tmpdir(), 'omniscout-recovery-browser-'));
+const reports = resolve(process.env.OMNISCOUT_REPORT_DIR || 'reports/v0.4'), temp = await mkdtemp(join(tmpdir(), 'omniscout-recovery-browser-'));
 await mkdir(reports, { recursive: true });
 const sample = JSON.parse(await readFile(new URL('../samples/import-demo.json', import.meta.url), 'utf8'));
 sample.players[0].name = 'Synthetisch herstelprofiel';

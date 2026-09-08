@@ -9,7 +9,7 @@ import { createApp } from '../src/server.mjs';
 const require = createRequire(import.meta.url);
 const { chromium } = require(process.env.OMNISCOUT_PLAYWRIGHT_PATH || 'playwright');
 const { expect } = require(process.env.OMNISCOUT_PLAYWRIGHT_PATH ? join(process.env.OMNISCOUT_PLAYWRIGHT_PATH, 'test') : 'playwright/test');
-const reportDir = resolve('reports/current');
+const reportDir = resolve(process.env.OMNISCOUT_REPORT_DIR || 'reports/current');
 await mkdir(reportDir, { recursive: true });
 const sample = JSON.parse(await readFile(new URL('../samples/import-demo.json', import.meta.url), 'utf8'));
 // Malicious-looking text is synthetic test data, never an instruction or HTML template.

@@ -1,0 +1,33 @@
+✔ review: source requests cannot follow supplied URLs or smuggle search terms into API parameters (434.7021ms)
+✔ review: invalid or sparse ID lists fail before any source request (6.206ms)
+✔ review: unknown competition, club and performance never become zero or invented facts (1019.5247ms)
+✔ review: related-item identity mismatch never attaches another item label to the requested QID (1017.6575ms)
+✔ review: impossible team intervals remain unknown and cannot enter a validated snapshot (1405.9542ms)
+✔ review: exact adult birthday boundary and uncertain birth claims fail conservatively (64.9205ms)
+✔ review: malformed revision, false entity identity and unknown-valued DOB are excluded (6.621ms)
+✔ review: incomplete upstream batches fail instead of replacing valid profiles with an empty successful snapshot (37.2661ms)
+✔ review: HTTP-200 API errors and rate limits do not become successful profiles or leaked messages (86.3535ms)
+✔ review: oversized chunk streams and malformed UTF-8 are stopped with sanitized errors (80.938ms)
+✔ review: the fifteen-second deadline also stops transports or readers that ignore AbortSignal (12.455ms)
+✔ review: validated snapshots reject forged facts, source links, dates, getters and prototype payloads (17.4496ms)
+✔ review: standalone profile embedding preserves hostile labels and replacement metacharacters as inert JSON (147.5547ms)
+✔ search uses the fixed encoded ActionAPI request and safe bounded fields (714.6579ms)
+✔ adult profile preserves revision, partial team dates and null unknowns; requests are spaced (1395.721ms)
+✔ birthday boundary excludes minors, future dates and age 101, but accepts 18 and 100 (9.7665ms)
+✔ final retrieval timestamp follows all label requests and age is rechecked at completion (1020.7783ms)
+✔ DOB rejects partial, invalid, Julian, uncertain and conflicting claims; deprecated conflicts are ignored (6.1469ms)
+✔ human, direct football occupation and source revision are required; missing entities are explicit exclusions (103.9441ms)
+✔ positions and teams are bounded, related labels use at most 100 IDs in batches of 50 (2074.3581ms)
+✔ source errors, non-JSON, malformed JSON and UTF-8, large bodies and malformed search fail visibly (245.271ms)
+✔ 429 and HTTP-200 maxlag produce visible Retry-After backoff with no automatic retry (18.3345ms)
+✔ only four operations are accepted and upstream requests remain sequential (3054.5466ms)
+✔ QIDs are strict, unique and bounded before any network request (2.4342ms)
+✔ snapshot validator rejects forged data, provenance, type confusion and unsafe objects and returns a clone (23.1803ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 10469.5527

@@ -1,0 +1,17 @@
+{
+  "mode": "native_browser_to_account_api_with_synthetic_injected_provider_and_file_standalone",
+  "realExternalProvider": false,
+  "executedAt": "2026-09-08T16:50:33.669Z",
+  "browser": "msedge",
+  "checks": [],
+  "errors": [
+    "Error: Ongeldig organisatie-ID; een UUID is vereist.\n    at error (file:///C:/Users/Han23/Documents/Codex/2026-09-08/lees-start-here-codex-md-en/work/Scoutingtool/src/organizations/index.mjs:17:56)\n    at organizationId (file:///C:/Users/Han23/Documents/Codex/2026-09-08/lees-start-here-codex-md-en/work/Scoutingtool/src/organizations/index.mjs:20:55)\n    at file:///C:/Users/Han23/Documents/Codex/2026-09-08/lees-start-here-codex-md-en/work/Scoutingtool/src/organizations/index.mjs:304:20"
+  ],
+  "pageErrors": [],
+  "upstreamCounts": {
+    "searches": 0,
+    "loads": 0
+  },
+  "requestEvidence": [],
+  "passed": false
+}

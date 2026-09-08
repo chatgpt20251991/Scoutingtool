@@ -1,0 +1,130 @@
+{
+  "at": "2026-09-08T16:54:41.794Z",
+  "browser": "Playwright Chromium channel msedge, headless",
+  "mode": "actual file:// navigation and local HTTP adapter for edge handler; no Cloudflare runtime/deployment",
+  "results": [
+    {
+      "test": "standalone: 12 synthetic players and import dataset unavailable",
+      "status": "passed"
+    },
+    {
+      "test": "standalone: import view explains Node requirement without upload/confirm controls",
+      "status": "passed"
+    },
+    {
+      "test": "standalone: shortlist actions and browser persistence survive reload",
+      "status": "passed"
+    },
+    {
+      "test": "standalone: 390px mobile shortlist/import have no page overflow",
+      "status": "passed"
+    },
+    {
+      "test": "edge-handler: 12 synthetic players and import dataset unavailable",
+      "status": "passed"
+    },
+    {
+      "test": "edge-handler: import view explains Node requirement without upload/confirm controls",
+      "status": "passed"
+    },
+    {
+      "test": "edge-handler: shortlist actions and browser persistence survive reload",
+      "status": "passed"
+    },
+    {
+      "test": "edge-handler: 390px mobile shortlist/import have no page overflow",
+      "status": "passed"
+    },
+    {
+      "test": "edge-handler: synthetic-only catalog and import mutation rejected with HTTP 501",
+      "status": "passed"
+    },
+    {
+      "test": "standalone and edge-handler: no browser JavaScript page errors",
+      "status": "passed"
+    }
+  ],
+  "pageErrors": [],
+  "requests": [
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/styles.css",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/app.js",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/modules/fixtures.mjs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/modules/engine.mjs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/favicon.svg",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/app.js",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/styles.css",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/modules/engine.mjs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/modules/fixtures.mjs",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/session",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/favicon.svg",
+      "status": 200
+    },
+    {
+      "method": "GET",
+      "path": "/api/catalog?dataset=import",
+      "status": 200
+    },
+    {
+      "method": "POST",
+      "path": "/api/import/confirm",
+      "status": 501
+    }
+  ]
+}

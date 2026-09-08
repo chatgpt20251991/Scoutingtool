@@ -83,7 +83,7 @@ async function createLegacyApp({ statePath = null, catalog: demoCatalog = CATALO
         if (selected === 'import' && workspaceState.decisions.concat(workspaceState.tasks).some(item => !catalog.players.some(p => p.id === item.playerId))) fail(403, 'Export bevat verwijzingen naar niet meer beschikbare importgegevens.');
       }
       const workspaceState = workspace(await store.read(), selected);
-      if (route === '/api/health' && req.method === 'GET') return json(200, { ok: true, mode: 'synthetic_demo', version: '0.4.0', liveSources: 0, productionReady: false });
+      if (route === '/api/health' && req.method === 'GET') return json(200, { ok: true, mode: 'synthetic_demo', version: '0.5.0', liveSources: 0, productionReady: false });
       if (route === '/api/session' && req.method === 'GET') return json(200, { csrf, mode: 'local_single_user_demo', supportsImport: true, persistence: statePath ? 'local_file' : 'memory', notice: 'Geen productie-authenticatie. Gebruik synthetische, niet-vertrouwelijke testgegevens.' });
       if (route === '/api/import/sample' && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename="omniscout-import-FICTIEF.json"' });
@@ -126,7 +126,7 @@ async function createLegacyApp({ statePath = null, catalog: demoCatalog = CATALO
         const data = await body(req); checkDataset(data); player(data.playerId);
         if (!Object.hasOwn(ACTION_LABELS, data.action) || !Object.hasOwn(REASON_LABELS, data.reason)) fail(400, 'Ongeldige actie of reden.');
         const note = text(data.note ?? '', 'Notitie', 2400, data.action === 'archive');
-        const entry = { id: randomUUID(), playerId: data.playerId, action: data.action, reason: data.reason, note, at: new Date().toISOString() };
+        const entry = { id: randomUUID(), playerId: data.playerId, action: data.action, reason: data.reason, note, at: now() };
         await updateWorkspace(state => { state.decisions.push(entry); audit(state, 'decision.created', entry.id, `${entry.playerId}: ${entry.action} (${entry.reason})`); return entry; });
         return json(201, entry);
       }
@@ -138,7 +138,7 @@ async function createLegacyApp({ statePath = null, catalog: demoCatalog = CATALO
           const existing = state.tasks.find(x => x.requestId === requestId);
           if (existing) { if (existing.playerId !== data.playerId || existing.question !== question) fail(409, 'Idempotentiesleutel is al voor een andere opdracht gebruikt.'); return existing; }
           if (state.tasks.length >= 2000) fail(409, 'Lokale opdrachtenlimiet bereikt.');
-          const created = { id: randomUUID(), playerId: data.playerId, question, requestId, status: 'todo', result: '', at: new Date().toISOString(), completedAt: null };
+          const created = { id: randomUUID(), playerId: data.playerId, question, requestId, status: 'todo', result: '', at: now(), completedAt: null };
           state.tasks.push(created); audit(state, 'task.created', created.id, data.playerId); return created;
         });
         return json(201, task);
@@ -150,7 +150,7 @@ async function createLegacyApp({ statePath = null, catalog: demoCatalog = CATALO
         const result = text(data.result ?? '', 'Uitkomst', 2400, data.status === 'done');
         const task = await updateWorkspace(state => {
           const task = state.tasks.find(x => x.id === taskMatch[1]); if (!task) fail(404, 'Opdracht niet gevonden.');
-          task.status = data.status; task.result = result; task.completedAt = data.status === 'done' ? new Date().toISOString() : null;
+          task.status = data.status; task.result = result; task.completedAt = data.status === 'done' ? now() : null;
           audit(state, 'task.updated', task.id, data.status); return task;
         });
         return json(200, task);

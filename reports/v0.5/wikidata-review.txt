@@ -1,0 +1,21 @@
+✔ review: source requests cannot follow supplied URLs or smuggle search terms into API parameters (50.441ms)
+✔ review: invalid or sparse ID lists fail before any source request (2.9164ms)
+✔ review: unknown competition, club and performance never become zero or invented facts (1031.5949ms)
+✔ review: related-item identity mismatch never attaches another item label to the requested QID (1005.5149ms)
+✔ review: impossible team intervals remain unknown and cannot enter a validated snapshot (1017.8479ms)
+✔ review: exact adult birthday boundary and uncertain birth claims fail conservatively (5.1991ms)
+✔ review: malformed revision, false entity identity and unknown-valued DOB are excluded (6.0444ms)
+✔ review: incomplete upstream batches fail instead of replacing valid profiles with an empty successful snapshot (34.1255ms)
+✔ review: HTTP-200 API errors and rate limits do not become successful profiles or leaked messages (33.22ms)
+✔ review: oversized chunk streams and malformed UTF-8 are stopped with sanitized errors (15.9241ms)
+✔ review: the fifteen-second deadline also stops transports or readers that ignore AbortSignal (3.1429ms)
+✔ review: validated snapshots reject forged facts, source links, dates, getters and prototype payloads (4.1822ms)
+✔ review: standalone profile embedding preserves hostile labels and replacement metacharacters as inert JSON (10.1251ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3398.8909

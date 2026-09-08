@@ -1,0 +1,357 @@
+
+> omniscout-research-radar@0.5.0 verify
+> npm run check && npm test && npm run preview:build
+
+
+> omniscout-research-radar@0.5.0 check
+> node tools/check.mjs
+
+Syntax OK: src/accounts-server.mjs
+Syntax OK: src/auth/index.mjs
+Syntax OK: src/backup/crypto.mjs
+Syntax OK: src/backup/server.mjs
+Syntax OK: src/backup/workspace.mjs
+Syntax OK: src/engine.mjs
+Syntax OK: src/fixtures.mjs
+Syntax OK: src/import/index.mjs
+Syntax OK: src/ingestion/coverage.mjs
+Syntax OK: src/ingestion/index.mjs
+Syntax OK: src/ingestion/local-json.mjs
+Syntax OK: src/organizations/index.mjs
+Syntax OK: src/providers/wikidata.mjs
+Syntax OK: src/server.mjs
+Syntax OK: src/store.mjs
+Syntax OK: public/app.js
+Syntax OK: worker/index.mjs
+Syntax OK: tests/account-api.test.mjs
+Syntax OK: tests/account-review.test.mjs
+Syntax OK: tests/auth-invitations.test.mjs
+Syntax OK: tests/auth.test.mjs
+Syntax OK: tests/backup-api.test.mjs
+Syntax OK: tests/backup-crypto.test.mjs
+Syntax OK: tests/backup-review.test.mjs
+Syntax OK: tests/backup-workspace.test.mjs
+Syntax OK: tests/engine.test.mjs
+Syntax OK: tests/import-api.test.mjs
+Syntax OK: tests/import-review.test.mjs
+Syntax OK: tests/import.test.mjs
+Syntax OK: tests/ingestion.test.mjs
+Syntax OK: tests/organization-recovery.test.mjs
+Syntax OK: tests/organizations.test.mjs
+Syntax OK: tests/public-profiles-api.test.mjs
+Syntax OK: tests/server-backup.test.mjs
+Syntax OK: tests/server.test.mjs
+Syntax OK: tests/store.test.mjs
+Syntax OK: tests/wikidata-review.test.mjs
+Syntax OK: tests/wikidata.test.mjs
+Syntax OK: tests/worker.test.mjs
+Syntax OK: tools/browser-accounts.mjs
+Syntax OK: tools/browser-e2e.mjs
+Syntax OK: tools/browser-public-profiles.mjs
+Syntax OK: tools/browser-recovery.mjs
+Syntax OK: tools/build-preview.mjs
+Syntax OK: tools/build-public-profiles.mjs
+Syntax OK: tools/check.mjs
+Syntax OK: tools/cli-smoke.mjs
+Syntax OK: tools/fetch-public-profiles.mjs
+Syntax OK: tools/offline-smoke.mjs
+Syntax OK: tools/server-backup.mjs
+Syntax OK: tools/standalone.mjs
+
+> omniscout-research-radar@0.5.0 test
+> node --test tests/*.test.mjs
+
+✔ default app gates all club data and every setup mutation uses same-origin preauth CSRF (1895.8233ms)
+✔ two clubs isolate matching player IDs, import hashes, job IDs, research IDs, exports and roles (3773.2178ms)
+✔ password rotation and logout revoke old cookies without affecting another account (6230.1363ms)
+✔ first setup preserves legacy bytes and restart requires login while retaining club state (4056.8879ms)
+✔ review: secure default gates every workspace API and exports despite forged organization context (507.1171ms)
+✔ review: preauth CSRF is cookie-bound and expires, and issued authenticated CSRF works for mutations (1660.5713ms)
+✔ review: organization header controls all data and a live demoted/revoked session loses write/read access (3658.2566ms)
+✔ review: last owner protected, old owner role is rechecked and invitations die with issuer authority (4552.6873ms)
+✔ review: password rotation revokes every old cookie and logout cannot reuse old data/API access (7312.5645ms)
+✔ review: expired sessions, untrusted host/origin and duplicate session cookies fail closed (1120.2676ms)
+✔ review: restarting persistent app invalidates session while retaining isolated state and exclusive lock (2778.0357ms)
+✔ review: failed setup migration remains bound to the first organization across repair and restart (2885.6767ms)
+✔ preview is read-only and acceptance joins an existing account without changing credentials (4805.8359ms)
+✔ existing members retain their role and last-owner protection while the code is consumed (2781.1641ms)
+✔ invitation preview and acceptance require an active signed-in session (4172.5472ms)
+✔ bad, expired, revoked and used codes return the same generic error (3304.4031ms)
+✔ a preview grants no authority after the issuing owner is demoted or removed (2402.9854ms)
+✔ owner invite lists expose bounded metadata and safe IDs only for their own club (2307.6667ms)
+✔ revocation is owner-scoped, never changes roles and prevents both forms of acceptance (1923.5251ms)
+✔ two existing accounts cannot concurrently consume the same invitation (2915.6285ms)
+✔ registration, acceptance and revocation share atomic one-use consumption (2209.7071ms)
+✔ old version-1 stored invites keep stable IDs and accepted membership survives restart (5422.2616ms)
+✔ failed acceptance and revocation writes preserve accounts, membership and reusable invite (1873.6171ms)
+✔ invite administration stays bounded and hides expired invitations without a write (3857.8135ms)
+✔ first setup creates one owner and sanitized sessions; callers cannot mutate auth state (1087.8622ms)
+✔ concurrent first setup cannot produce a second owner account (3752.2472ms)
+✔ credential and display bounds reject invalid setup without consuming first-run state (2853.5824ms)
+✔ roles are enforced and membership removal immediately denies existing sessions (4825.45ms)
+✔ last owner remains protected during concurrent demotions and removal (2362.3034ms)
+✔ invite role cannot be overridden, one-time consumption is atomic, and invalid codes are generic (2239.347ms)
+✔ duplicate usernames do not consume a valid invitation (2154.2227ms)
+✔ expired sessions and invitations deny access at the expiry boundary (1855.3914ms)
+✔ demoting or removing an invite creator revokes their outstanding invites (2021.9181ms)
+✔ password changes verify current password, rotate sessions and persist only the new hash (7118.2229ms)
+✔ persistent state has unique salts and digested invites but no passwords or session material (3981.0461ms)
+✔ failed setup and later writes leave in-memory accounts and existing sessions unchanged (4367.5515ms)
+✔ corrupted, oversized and unsafe stored account state fails closed without rewriting (457.2632ms)
+✔ failed registration preserves its invitation and creates no phantom account (2647.1012ms)
+✔ per-account login limit includes wrong passwords and resets after a bounded window (6118.5702ms)
+✔ a global login limit bounds username rotation (11.6524ms)
+✔ organization, invitation and account capacity limits do not partially mutate state (1646.9337ms)
+✔ session capacity evicts oldest session while preserving newest valid logins (55811.9738ms)
+✔ missing sessions and invalid organization identifiers deny access (351.8752ms)
+✔ backup and retention API require current owner, organization and CSRF; no full-server route is exposed (5500.4992ms)
+✖ encrypted club backup previews without writes, rejects stale/cross-club plans, restores once and keeps durable recovery copy (4986.3891ms)
+✔ restore previews expire and are bound to session/user, survive no logout/password rotation, and cannot be reused by a second owner (10079.9615ms)
+✔ backup copy and restore obey current rights while retention preview can still report blocked retained data (3584.9666ms)
+✔ existing-account invitation HTTP preview and acceptance preserve account identity and owner-only invite administration (3435.1344ms)
+✔ multi-megabyte encrypted backups validate canonical base64 without recursive regular expressions (3597.0424ms)
+✔ encrypted backups roundtrip Unicode and produce independent salts, IVs and ciphertext without names in metadata (3909.1855ms)
+✔ wrong passphrases and altered authenticated ciphertext never return partially decoded data (7679.1446ms)
+✔ backup crypto refuses caller-selected algorithms, malformed base64, invalid passphrases and excess payloads (1765.5254ms)
+✔ backup crypto has a bounded work queue and recovers after rejected operations (5950.572ms)
+✔ review: oversized passphrases are rejected before Unicode expansion and excessive ciphertext before decode (1109.7193ms)
+✔ review: four in-flight HTTP backup operations bound slow bodies and capacity returns after rejected requests (4155.4797ms)
+✔ review: four stored previews are bounded, disclose only summaries and expiry releases capacity (10999.7458ms)
+✔ review: permission revocation or session expiry while reading a backup body prevents later download (2872.0347ms)
+✖ review: owner revoked after private-copy work starts cannot commit an HTTP restore (4231.6451ms)
+✔ workspace backup preserves both datasets, original snapshots, jobs, actors and inert notes without changing input (202.0513ms)
+✔ digest is deterministic across object order while every state value remains significant (1.411ms)
+✔ restore rejects wrong club, version, tampered digest, forged summary, metadata and unknown credentials (10.7381ms)
+✔ strict state validation rejects malformed work, missing references, duplicate IDs and unknown nested fields (691.9431ms)
+✔ bounded JSON rejects oversized, circular, deep, sparse, accessor and prototype-bearing input (125.4534ms)
+✔ all retained snapshots require current export/store rights even after rollback and expiry (234.8562ms)
+✔ failed retained job payloads also require export rights even with no imported catalog (16.7678ms)
+✔ pending jobs are refused for backup but visible in non-destructive retention preview (53.3752ms)
+✔ correction and rollback history is preserved; dependency violations cannot be imported as a backup (79.7336ms)
+✔ retention bounds rows and separates old candidates, live dependencies and rights without leaking notes (61.2603ms)
+✔ fixture catalog is valid and all football records are explicitly synthetic (16.1515ms)
+✔ null, zero, invalid and negative minutes never produce a per-90 value (0.5732ms)
+✔ an observed zero remains a valid zero (0.4402ms)
+✔ percentages reject inconsistent numerator and denominator (0.4521ms)
+✔ age is calculated at the cutoff, including birthdays (0.4689ms)
+✔ source use is blocked if rights expire, begin later or omit the specific purpose (0.6166ms)
+✔ future records and unavailable publication dates do not leak into a cutoff (0.4881ms)
+✔ provider identity never merges players based on names (1.0389ms)
+✔ source freshness distinguishes old, current and missing timestamps (0.5963ms)
+✔ unknown statistics remain in the exploration queue (2.6831ms)
+✔ short appearances are not labelled as well-documented despite high per-90 rates (0.7337ms)
+✔ keeper and defender discovery does not depend on goals or assists (0.9033ms)
+✔ feed coverage version changes cannot produce a fictional performance trend (0.3178ms)
+✔ incompatible definitions and unequal match windows cannot produce a trend (0.6617ms)
+✔ comparable windows return their observed minutes difference, not a growth forecast (0.3119ms)
+✔ cutoff filtering removes later stats without treating them as observed zeros (2.2751ms)
+✔ expired sources block the entire dossier (1.8593ms)
+✔ unknown ages and minors are excluded from this adult prototype (1.1711ms)
+✔ stale feeds require exploration rather than retaining a current evidence badge (1.3377ms)
+✔ counterevidence is retained alongside positive evidence (0.5173ms)
+✔ untrusted text cannot change deterministic rules (2.4719ms)
+✔ search works by role, age, country, region and coverage route (60.1989ms)
+✔ new means new for the local club; decisions do not alter measured quality (4.3342ms)
+✔ last scout decision determines shortlist membership (1.9113ms)
+✔ coverage is per data type and lack of connection remains explicit (0.3653ms)
+✔ budget rejections are not encoded as negative talent labels (2.1251ms)
+✔ CSV neutralizes formula injection, quotes and preserves missing values (0.6477ms)
+✔ exports include provenance, cutoff and synthetic data notice (3.578ms)
+✔ snapshot validation rejects duplicate provider IDs and missing rights (4.6762ms)
+✔ snapshot validation rejects negative measures and missing coverage dimensions (2.4937ms)
+✔ default import as-of uses the same instant as validation when the clock advances (149.9931ms)
+✔ import preview writes nothing; malformed, oversized and unauthorized imports leave state unchanged (144.7684ms)
+✔ import, dossier, shortlist, research, CSV, duplicate import and restart use one durable isolated workspace (548.6817ms)
+✔ an importer cannot bypass separate export rights through CSV or workspace JSON (53.5709ms)
+✔ filesystem replacement failure preserves the previous in-memory and durable state and allows recovery (810.2359ms)
+✔ review: current export revocation also blocks historical CSV and workspace exports (419.775ms)
+✔ review: confirmation requires an object envelope and cannot create a job without a snapshot ID (87.7808ms)
+✔ review: malformed rights and enum objects yield validation errors rather than server exceptions (38.5137ms)
+✔ review: later source expiry blocks historical reads and never exposes raw snapshots in workspace state (54.2912ms)
+✔ review: competition ID reuse cannot relabel prior observations into another season (5.4351ms)
+✔ review: corrected counts preserve prior dossiers, counterevidence, and do not become a growth signal (13.9442ms)
+✔ review: duplicate names remain distinct, while a disputed provider identity prevents all writes (79.6949ms)
+✔ review: HTML and formula text stay data across import, dossier, and protected CSV download (69.7394ms)
+✔ review: rollback dependency guards restore the prior version without removing retained history (114.2617ms)
+✔ bounded sample validates, preview is pure, SHA256 ignores object key order (40.9319ms)
+✔ invalid JSON, nonobjects, wrong version and unknown fields are rejected (41.7798ms)
+✔ one MiB limit uses UTF8 bytes; collection limits and nested values are bounded (91.4535ms)
+✔ explicit current rights, lifetime and declaration are mandatory (91.3152ms)
+✔ calendar validity, adult identity and every timestamp are checked (162.0337ms)
+✔ metric types, explicit nullable minutes and sample consistency are validated (57.416ms)
+✔ coverage uses seven dimensions, source, season and real denominator (74.4919ms)
+✔ equal names remain independent; IDs and provider identities cannot conflict (49.0168ms)
+✔ snapshot and observation IDs are immutable, idempotency leaves history/counts stable (35.0017ms)
+✔ correction preserves old as-of revision and never synthesizes a development window (35.5685ms)
+✔ future as-of snapshots and expired current rights are excluded on every read (8.724ms)
+✔ current export revocation also applies to historical dossiers (16.2569ms)
+✔ competition season cannot silently relabel older players, and revisions cannot be backdated (30.6035ms)
+✔ rollback is append-only, idempotent, restores prior revision, and rejects dependent rollback (30.9162ms)
+✔ source status cannot change and atomic validation keeps previous state intact (36.1581ms)
+✔ counterevidence and injection strings survive as inert text with provenance (10.69ms)
+✔ local adapter accepts only bounded UTF-8 JSON bytes and never connects a provider (24.4739ms)
+✔ coverage keeps seven independent dimensions and counts only catalog players (1.7483ms)
+✔ coverage percentages need a known consistent denominator and never establish measurement completeness (0.8396ms)
+✔ confirmed job applies immutable data and succeeds in the same durable transaction (300.6177ms)
+✔ invalid payload and stale preview digest write no jobs or imported records (12.6754ms)
+✔ queue module rejects string, array, and null envelopes before retaining a job (5.8742ms)
+✔ concurrent duplicate confirmations share one job and one imported snapshot (90.896ms)
+✔ snapshot IDs cannot be reused with changed content while queued (41.1236ms)
+✔ caller mutation after enqueue cannot alter the persisted job (42.181ms)
+✔ a failed commit leaves no partial data and explicit retry succeeds once (64.2994ms)
+✔ repeated processing errors are visible and retries stop after three attempts (69.7408ms)
+✔ execution rechecks source expiry after confirmation and rejects expired retry (31.5133ms)
+✔ restart recovers interrupted and queued work using persisted immutable payloads (21.4824ms)
+✔ restart never resets exhausted attempts or hides interrupted failures (14.359ms)
+✔ pending queue is bounded and rejects extra jobs without dropping admitted work (1346.6284ms)
+✔ retained history has a hard bound and is never silently pruned (483.4119ms)
+✔ unknown or nonfailed jobs cannot be retried (26.3933ms)
+✔ capture drains queued imports, returns isolated copies, and strips only known manager receipts (179.0662ms)
+✔ retention capture reads persisted pending jobs without starting queue or rewriting source state (1056.5674ms)
+✔ restore saves durable prior state, preserves legacy receipt and keeps old store/queue handles working after restart (1189.8817ms)
+✔ stale previews, wrong backup digests and invalid actors cannot replace current state or make copies (5.6377ms)
+✔ restore serializes concurrent mutations and reauthorizes after queues drain and before commit (7.7934ms)
+✔ pending incoming jobs and pending legacy migration block restore without executing imported work (117.9791ms)
+✔ full recovery history refuses the eleventh copy without silent deletion in memory and file mode (1417.7408ms)
+✔ recovery copy ENOSPC and final state-write ENOSPC leave old disk and memory intact (389.1051ms)
+✔ recovery directory symlinks and unsafe organization paths cannot redirect private copies (68.0949ms)
+✔ source rights are rechecked at final commit and denied old state cannot be copied through restore (170.7441ms)
+✔ memory organizations isolate notes, requests, audit, briefs, imports and identical retained job IDs (157.4578ms)
+✔ concurrent opens reuse one queue and durable directories survive manager restart (600.3692ms)
+✔ invalid IDs, path traversal, arrays, nil UUID and UUID aliases never create a workspace (4.3193ms)
+✔ manager lock excludes both same-process and child-process access and close releases it (765.0962ms)
+✔ ambiguous crash locks are preserved until explicit recovery; invalid journals release own acquired lock (765.9479ms)
+✔ close drains already accepted jobs, is idempotent and rejects stale public handles (345.0836ms)
+✔ first legacy claim preserves original bytes and migrates isolated demo/import/history once (327.1529ms)
+✔ existing nonempty target is preserved, including a brief-only workspace (108.3667ms)
+✔ competing legacy claims serialize and copy old data into exactly one organization (136.3299ms)
+✔ migrated interrupted import job recovers once and preserves original legacy queue bytes (167.0716ms)
+✔ no source is a durable first-organization decision; later source cannot leak into another club (128.1295ms)
+✔ malformed legacy state and invalid snapshot digest leave source and target unchanged (468.5959ms)
+✔ malformed first source reserves its organization durably and repaired source cannot be claimed by another (341.8765ms)
+✔ target-write failure retains pending claim and retries without partial in-memory data (1092.0446ms)
+✔ restart recovers target commit whose completion-marker write failed, without rereading source (290.0185ms)
+✔ changed pending source is refused and cannot redirect claim to another organization (821.8888ms)
+✔ normal failed persistence preserves organization state and later writes can recover (94.41ms)
+✔ organization directory junctions/symlinks cannot redirect writes outside the data directory (40.8535ms)
+✔ stats expose only sanitized counts, limits and storage mode for the requested organization (24.6333ms)
+✔ public profile requests are gated by accounts, club membership, write role and CSRF before provider calls (2007.7108ms)
+✔ validated public snapshot is isolated by club, remains read-only and upstream errors retain prior data (2386.8795ms)
+✔ revoking the fetching member while upstream is pending prevents result and cache write (2155.1781ms)
+✔ HTTP provider work is bounded and released after failures; invalid snapshots are never cached (1951.2401ms)
+✔ future-dated profiles cannot grant adulthood or populate the club cache (1839.807ms)
+✔ full encrypted server backup restores real login and isolated scouting after fresh restart (9230.8842ms)
+✔ a running or stale server lock is never stolen and source files stay unchanged (1894.987ms)
+✔ queued jobs and pending or inconsistent migration claims refuse backup without processing jobs (1212.4645ms)
+✔ bad passwords and tampering fail before any destination is created (3155.8623ms)
+✔ manifest path forgery, missing clubs, hashes and invitations are rejected after decryption (7933.1148ms)
+✔ current rights apply to retained rollback history during create, preview and restore (5336.4997ms)
+✔ unknown files, orphan clubs, malformed accounts and oversized accounts fail closed (1593.5798ms)
+✔ existing or unsafe restore destinations remain unchanged and mismatched confirmation cannot restore (3157.9482ms)
+✔ hardlinked account files and junction organization folders are refused (1273.804ms)
+✔ unwritten new organizations are explicitly backed up as empty while source files stay unchanged (4296.7298ms)
+✔ concurrent full restores publish once and leave no owned staging directories (4069.4555ms)
+✔ CLI supports private-file create, inspect and confirmed restore without plaintext stdout or overwrites (4627.9365ms)
+✔ health explicitly states synthetic demo and zero live sources (194.3563ms)
+✔ HTTP serves only known public files, not the repository (69.6433ms)
+✔ security headers block framing and arbitrary script origins (6.7509ms)
+✔ DNS rebinding-style hostnames are denied (25.215ms)
+✔ writes require a valid session token (15.9193ms)
+✔ cross-origin and cross-site requests are denied (5.7371ms)
+✔ Unicode session-token input does not trigger a server exception (6.5072ms)
+✔ API search filters synthetic players (13.2088ms)
+✔ unknown player IDs cannot be saved (9.2266ms)
+✔ invalid actions and unsupported request content are rejected (8.1466ms)
+✔ archive decisions require a note and preserve a budget reason (12.881ms)
+✔ shortlist decisions persist and are recorded in audit events (8.381ms)
+✔ retrying the same research request does not create a duplicate (26.4844ms)
+✔ an idempotency key cannot silently overwrite another task (4.5135ms)
+✔ completing a task requires a written observation (16.2124ms)
+✔ brief validation rejects minors and invalid age ranges (10.0914ms)
+✔ a valid structured brief is saved without pretending to parse its text with AI (7.4423ms)
+✔ oversized requests are rejected (23.1809ms)
+✔ shortlist CSV can be downloaded with a synthetic-data label (6.5638ms)
+✔ file persistence survives reopening and serializes concurrent writes (92.4555ms)
+✔ atomic replacement retries transient Windows errors using exactly the same source and destination (10.4048ms)
+✔ persistent Windows rename denial stops after six attempts and preserves the original error (1.995ms)
+✔ unrelated errors and non-Windows errors never retry or delete a destination (0.9021ms)
+✔ real Windows sharing lock releases within the retry window and the store commits once (1723.1617ms)
+✔ real persistent Windows sharing lock preserves disk and memory, then later mutation recovers (1700.465ms)
+✔ parallel stores preserve exactly successful commits under external read contention and recover afterward (3698.3409ms)
+ℹ 159/160 committed; 1 visible bounded sharing failures; disk and memory match exactly; recovery succeeded.
+✔ review: source requests cannot follow supplied URLs or smuggle search terms into API parameters (104.6499ms)
+✔ review: invalid or sparse ID lists fail before any source request (2.7562ms)
+✔ review: unknown competition, club and performance never become zero or invented facts (1032.1453ms)
+✔ review: related-item identity mismatch never attaches another item label to the requested QID (1033.47ms)
+✔ review: impossible team intervals remain unknown and cannot enter a validated snapshot (1028.641ms)
+✔ review: exact adult birthday boundary and uncertain birth claims fail conservatively (10.0497ms)
+✔ review: malformed revision, false entity identity and unknown-valued DOB are excluded (10.3953ms)
+✔ review: incomplete upstream batches fail instead of replacing valid profiles with an empty successful snapshot (27.3807ms)
+✔ review: HTTP-200 API errors and rate limits do not become successful profiles or leaked messages (45.5596ms)
+✔ review: oversized chunk streams and malformed UTF-8 are stopped with sanitized errors (13.7968ms)
+✔ review: the fifteen-second deadline also stops transports or readers that ignore AbortSignal (4.8891ms)
+✔ review: validated snapshots reject forged facts, source links, dates, getters and prototype payloads (6.9824ms)
+✔ review: standalone profile embedding preserves hostile labels and replacement metacharacters as inert JSON (15.2345ms)
+✔ search uses the fixed encoded ActionAPI request and safe bounded fields (85.6542ms)
+✔ adult profile preserves revision, partial team dates and null unknowns; requests are spaced (1024.7775ms)
+✔ birthday boundary excludes minors, future dates and age 101, but accepts 18 and 100 (10.8ms)
+✔ final retrieval timestamp follows all label requests and age is rechecked at completion (1015.2867ms)
+✔ DOB rejects partial, invalid, Julian, uncertain and conflicting claims; deprecated conflicts are ignored (5.9784ms)
+✔ human, direct football occupation and source revision are required; missing entities are explicit exclusions (7.12ms)
+✔ positions and teams are bounded, related labels use at most 100 IDs in batches of 50 (2025.4061ms)
+✔ source errors, non-JSON, malformed JSON and UTF-8, large bodies and malformed search fail visibly (184.3001ms)
+✔ 429 and HTTP-200 maxlag produce visible Retry-After backoff with no automatic retry (16.8383ms)
+✔ only four operations are accepted and upstream requests remain sequential (3024.624ms)
+✔ QIDs are strict, unique and bounded before any network request (1.5542ms)
+✔ snapshot validator rejects forged data, provenance, type confusion and unsafe objects and returns a clone (14.5479ms)
+✔ edge health never claims to be a live ingestion worker (106.1931ms)
+✔ edge demo refuses writes until production state and auth exist (1.2398ms)
+✔ edge filters the same fixture engine as the local version (52.0935ms)
+✔ edge missing asset bindings fail visibly (1.2788ms)
+✔ edge asset responses have security headers (2.6262ms)
+ℹ tests 247
+ℹ suites 0
+ℹ pass 245
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 106187.3105
+
+✖ failing tests:
+
+test at tests\backup-api.test.mjs:39:1
+✖ encrypted club backup previews without writes, rejects stale/cross-club plans, restores once and keeps durable recovery copy (4986.3891ms)
+  AssertionError [ERR_ASSERTION]: {"error":"Ongeldige of toekomstige besluittijd."}
+  
+  400 !== 200
+  
+      at TestContext.<anonymous> (file:///C:/Users/Han23/Documents/Codex/2026-09-08/lees-start-here-codex-md-en/work/Scoutingtool/tests/backup-api.test.mjs:42:77)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 400,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at tests\backup-review.test.mjs:114:1
+✖ review: owner revoked after private-copy work starts cannot commit an HTTP restore (4231.6451ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  400 !== 200
+  
+      at TestContext.<anonymous> (file:///C:/Users/Han23/Documents/Codex/2026-09-08/lees-start-here-codex-md-en/work/Scoutingtool/tests/backup-review.test.mjs:117:106)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 400,
+    expected: 200,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

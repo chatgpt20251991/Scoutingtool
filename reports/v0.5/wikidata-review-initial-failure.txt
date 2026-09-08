@@ -1,0 +1,28 @@
+Command: node --test --test-name-pattern='incomplete upstream' tests/wikidata-review.test.mjs
+Exit code: 1
+Raw command output (before the missing entity-key validation fix):
+
+✖ review: incomplete upstream batches fail instead of replacing valid profiles with an empty successful snapshot (69.984ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 316.8173
+
+✖ failing tests:
+
+test at tests\wikidata-review.test.mjs:117:1
+✖ review: incomplete upstream batches fail instead of replacing valid profiles with an empty successful snapshot (69.984ms)
+  AssertionError [ERR_ASSERTION]: Missing expected rejection.
+      at async TestContext.<anonymous> (file:///C:/Users/Han23/Documents/Codex/2026-09-08/lees-start-here-codex-md-en/work/Scoutingtool/tests/wikidata-review.test.mjs:119:3)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:385:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    operator: 'rejects',
+    diff: 'simple'
+  }

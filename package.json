@@ -1,6 +1,6 @@
 {
   "name": "omniscout-research-radar",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
   "description": "Werkend lokaal scoutingprototype met expliciete datadekking, bewijs en onderzoeksacties.",
@@ -18,7 +18,10 @@
     "test:offline": "node tools/offline-smoke.mjs",
     "test:cli": "node tools/cli-smoke.mjs",
     "test:recovery": "node tools/browser-recovery.mjs",
-    "backup:server": "node tools/server-backup.mjs"
+    "backup:server": "node tools/server-backup.mjs",
+    "test:profiles": "node tools/browser-public-profiles.mjs",
+    "profiles:fetch": "node tools/fetch-public-profiles.mjs",
+    "profiles:preview": "node tools/build-public-profiles.mjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

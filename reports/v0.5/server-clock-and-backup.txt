@@ -1,0 +1,39 @@
+✔ backup and retention API require current owner, organization and CSRF; no full-server route is exposed (2162.5005ms)
+✔ encrypted club backup previews without writes, rejects stale/cross-club plans, restores once and keeps durable recovery copy (4139.773ms)
+✔ restore previews expire and are bound to session/user, survive no logout/password rotation, and cannot be reused by a second owner (4749.0082ms)
+✔ backup copy and restore obey current rights while retention preview can still report blocked retained data (1465.2738ms)
+✔ existing-account invitation HTTP preview and acceptance preserve account identity and owner-only invite administration (1417.4084ms)
+✔ review: oversized passphrases are rejected before Unicode expansion and excessive ciphertext before decode (718.0987ms)
+✔ review: four in-flight HTTP backup operations bound slow bodies and capacity returns after rejected requests (1906.2164ms)
+✔ review: four stored previews are bounded, disclose only summaries and expiry releases capacity (4783.9063ms)
+✔ review: permission revocation or session expiry while reading a backup body prevents later download (1413.6623ms)
+✔ review: owner revoked after private-copy work starts cannot commit an HTTP restore (2414.4949ms)
+✔ scouting decisions, task creation/completion and audit use the same injected clock as backup validation (278.5407ms)
+✔ health explicitly states synthetic demo and zero live sources (270.6597ms)
+✔ HTTP serves only known public files, not the repository (28.2694ms)
+✔ security headers block framing and arbitrary script origins (9.8141ms)
+✔ DNS rebinding-style hostnames are denied (17.5814ms)
+✔ writes require a valid session token (15.3624ms)
+✔ cross-origin and cross-site requests are denied (9.5995ms)
+✔ Unicode session-token input does not trigger a server exception (15.7644ms)
+✔ API search filters synthetic players (9.8978ms)
+✔ unknown player IDs cannot be saved (6.8164ms)
+✔ invalid actions and unsupported request content are rejected (5.7842ms)
+✔ archive decisions require a note and preserve a budget reason (9.2516ms)
+✔ shortlist decisions persist and are recorded in audit events (7.7822ms)
+✔ retrying the same research request does not create a duplicate (10.342ms)
+✔ an idempotency key cannot silently overwrite another task (4.0597ms)
+✔ completing a task requires a written observation (9.7843ms)
+✔ brief validation rejects minors and invalid age ranges (6.7701ms)
+✔ a valid structured brief is saved without pretending to parse its text with AI (3.3274ms)
+✔ oversized requests are rejected (22.2682ms)
+✔ shortlist CSV can be downloaded with a synthetic-data label (4.7164ms)
+✔ file persistence survives reopening and serializes concurrent writes (87.471ms)
+ℹ tests 31
+ℹ suites 0
+ℹ pass 31
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 14317.7701

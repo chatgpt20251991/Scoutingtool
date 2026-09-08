@@ -5,6 +5,7 @@ import { createAuth } from './auth/index.mjs';
 import { createOrganizationManager } from './organizations/index.mjs';
 import { sealBackup, openBackup, MAX_ENVELOPE_BYTES } from './backup/crypto.mjs';
 import { createWorkspaceBackup, inspectWorkspaceBackup, retentionPreview, validateWorkspaceState } from './backup/workspace.mjs';
+import { createWikidataProvider, validatePublicProfiles } from './providers/wikidata.mjs';
 
 const fail = (status, message) => { throw Object.assign(new Error(message), { status }); };
 const digest = value => createHash('sha256').update(value).digest('hex');
@@ -30,7 +31,7 @@ async function readBody(req, limit = 65536) {
 }
 
 /** Account boundary remains loopback-only. No public deployment or external identity provider. */
-export async function createAccountApp({ dataDir = null, legacyStatePath = null, statePath = null, now = () => new Date().toISOString(), legacyFactory, contextKey, securityHeaders } = {}) {
+export async function createAccountApp({ dataDir = null, legacyStatePath = null, statePath = null, now = () => new Date().toISOString(), publicProfileProvider, legacyFactory, contextKey, securityHeaders } = {}) {
   if (statePath && !dataDir) fail(400, 'Gebruik dataDir voor accounts; statePath is alleen voor expliciete legacy-tests.');
   const manager = await createOrganizationManager({ dataDir, legacyStatePath, now });
   let auth, publicApp;
@@ -39,7 +40,9 @@ export async function createAccountApp({ dataDir = null, legacyStatePath = null,
     publicApp = await legacyFactory({ now });
   } catch (error) { await manager.close(); throw error; }
   const applications = new Map(), preauth = new Map(), authAttempts = new Map(), previews = new Map();
-  let backupActive = 0;
+  let backupActive = 0, profileActive = 0, profileRequests = { until: 0, count: 0 };
+  const profileProvider = publicProfileProvider ?? createWikidataProvider({ now });
+  const profileCache = new Map();
   const clock = () => Date.parse(typeof now === 'function' ? now() : now);
   const persistence = dataDir ? 'local_file' : 'memory';
   function forgetPreview(id) { const preview = previews.get(id); if (preview) clearTimeout(preview.timer); previews.delete(id); }
@@ -79,7 +82,7 @@ export async function createAccountApp({ dataDir = null, legacyStatePath = null,
       if (req.headers['sec-fetch-site'] === 'cross-site' || (req.headers.origin && req.headers.origin !== origin)) fail(403, 'Cross-site verzoek geblokkeerd.');
       const mutates = !['GET', 'HEAD'].includes(req.method);
       if (mutates && req.headers.origin !== origin) fail(403, 'Lokale origin vereist voor wijzigingen.');
-      if (route === '/api/health' && req.method === 'GET') return json(200, { ok: true, mode: 'local_accounts', version: '0.4.0', liveSources: 0, productionReady: false });
+      if (route === '/api/health' && req.method === 'GET') return json(200, { ok: true, mode: 'local_accounts', version: '0.5.0', liveSources: profileCache.size ? 1 : 0, liveMatchSources: 0, publicProfileProvider: 'wikidata', productionReady: false });
       const requestCookies = cookies(req), token = requestCookies.omniscout_session || '';
       const session = token ? await auth.session(token) : null;
       if (route === '/api/session' && req.method === 'GET') {
@@ -143,6 +146,29 @@ export async function createAccountApp({ dataDir = null, legacyStatePath = null,
       if (typeof orgId !== 'string') fail(400, 'Kies een clubwerkruimte.');
       const authorization = await auth.authorize(token, orgId, { write: mutates });
       if (mutates && !csrfValid(req.headers['x-omniscout-csrf'], session.csrf)) fail(403, 'Ongeldig of verlopen sessietoken.');
+      if (route === '/api/public-profiles' && req.method === 'GET') {
+        const snapshot = profileCache.get(orgId) ?? null;
+        return json(200, { provider: 'wikidata', snapshot, supportsFetch: true, stale: snapshot ? clock() - Date.parse(snapshot.retrievedAt) > 86400000 : false });
+      }
+      if (route.startsWith('/api/public-profiles/')) {
+        if (!((route === '/api/public-profiles/search' && req.method === 'GET') || (route === '/api/public-profiles/load' && req.method === 'POST'))) fail(404, 'Niet gevonden.');
+        if (profileActive >= 4) fail(429, 'Te veel bronverzoeken tegelijk. Probeer later opnieuw.');
+        if (profileRequests.until <= clock()) profileRequests = { until: clock() + 60000, count: 0 };
+        if (++profileRequests.count > 30) fail(429, 'Bronlimiet bereikt. Wacht één minuut voordat je opnieuw probeert.');
+        profileActive++;
+        try {
+          if (req.method === 'GET') {
+            const result = await profileProvider.search(url.searchParams.get('q') || '');
+            await auth.authorize(token, orgId); return json(200, result);
+          }
+          const data = await readBody(req, 4096);
+          if (Object.keys(data).some(key => key !== 'ids')) fail(400, 'Alleen Wikidata-ID’s zijn toegestaan.');
+          const snapshot = validatePublicProfiles(await profileProvider.load(data.ids));
+          if (Date.parse(snapshot.retrievedAt) > clock()) fail(400, 'Een profielkopie uit de toekomst is niet toegestaan.');
+          await auth.authorize(token, orgId, { write: true });
+          profileCache.set(orgId, snapshot); return json(200, snapshot);
+        } finally { profileActive--; }
+      }
       if (route.startsWith('/api/backup/') || route === '/api/retention/preview') {
         const owner = () => auth.authorize(token, orgId, { owner: true });
         await owner();
@@ -199,7 +225,7 @@ export async function createAccountApp({ dataDir = null, legacyStatePath = null,
   async function close() {
     return closing ||= (async () => {
       if (server.listening) await new Promise(resolve => server.close(resolve));
-      clearPreviews(() => true); await publicApp.importQueue.idle(); await manager.close();
+      clearPreviews(() => true); profileCache.clear(); await publicApp.importQueue.idle(); await manager.close();
     })();
   }
   return { server, auth, organizationManager: manager, close };
