@@ -1,6 +1,6 @@
 # Omni-Scout · Scoutingtool
 
-**Versie 0.3.0 — lokaal onderzoeksprototype, 8 september 2026.** Node is het hoofdproject; de volledige Python-app blijft ongewijzigd onder `reference/python-prototype/`. Oorspronkelijke ZIPs, bouwbrieven, demo's en screenshots zijn behouden.
+**Versie 0.4.0 — lokaal onderzoeksprototype, 8 september 2026.** Node is het hoofdproject; de volledige Python-app blijft ongewijzigd onder `reference/python-prototype/`. Oorspronkelijke ZIPs, bouwbrieven, demo's en screenshots zijn behouden.
 
 De radar bevat 12 fictieve spelers en 8 fictieve competities. De afzonderlijke importdataset begint leeg. Er zijn geen live dataproviders, AI-modellen of productieaccounts aangesloten.
 
@@ -16,11 +16,19 @@ Open http://127.0.0.1:4173. Windows: `START_WINDOWS.cmd`. Maak bij de eerste sta
 
 ## Accounts en clubwerkruimten
 
-Kies een club via de clubkiezer. In **Account & club** kun je een nieuwe lege club maken, leden uitnodigen, rollen beheren, opslagstatistieken bekijken en je wachtwoord wijzigen. Een uitnodiging maakt één nieuwe account aan en verloopt na 48 uur. Deel de code zelf; de app verstuurt geen e-mail. `viewer` leest, `scout` verwerkt scoutinggegevens en imports, `owner` beheert ook leden. De laatste eigenaar blijft beschermd.
+Kies een club via de clubkiezer. In **Account & club** kun je een nieuwe lege club maken, leden uitnodigen, rollen beheren, opslagstatistieken bekijken en je wachtwoord wijzigen. Een uitnodiging verloopt na 48 uur en kan één nieuwe of bestaande account aan de club toevoegen. Bestaande accounts controleren eerst club en rol en bevestigen daarna; een bestaand clublid krijgt hierdoor geen hogere rol. Eigenaren kunnen openstaande uitnodigingen bekijken en intrekken. Deel de code zelf; de app verstuurt geen e-mail. `viewer` leest, `scout` verwerkt scoutinggegevens en imports, `owner` beheert ook leden. De laatste eigenaar blijft beschermd.
 
 Elke API-aanvraag controleert de sessie en het actuele clublidmaatschap, ook voor exports en jobs. Wachtwoorden worden met scrypt gehasht; sessies gebruiken HttpOnly-cookies en afzonderlijke CSRF-controle. Wachtwoordwijziging trekt alle oude sessies in. Na serverherstart moet iedereen opnieuw aanmelden, terwijl accounts en clubgegevens bewaard blijven. Clubwissel en afmelden wissen eerder geladen clubinhoud uit de interface.
 
 Bestaande v0.2-opslag wordt eenmalig naar de eerste club gemigreerd; het oorspronkelijke `.local/state.json` blijft behouden. Bij een fout blijft de claim aan die club gebonden en is gecontroleerd herstel nodig. Lees [accountbeveiliging](docs/AUTH_SECURITY.md) en [opslag, proceslock en migratieherstel](docs/ORGANIZATION_STORAGE.md).
+
+## Back-ups, herstel en bewaarinventarisatie
+
+Eigenaren maken in **Account & club** een versleutelde back-up van de gekozen club. Bewaar de wachtzin zelf; de app kan deze niet herstellen. Het bestand bevat zowel demo- als importwerk, zonder accounts of andere clubs. Bestand en wachtzin leveren eerst een controleoverzicht op; alleen expliciete bevestiging vervangt de scoutinggegevens van dezelfde club. De preview vervalt na vijf minuten en bij tussentijdse wijzigingen moet je opnieuw controleren. De vorige state blijft lokaal als herstelkopie bewaard.
+
+De bewaarinventarisatie toont oudere gegevens, actieve afhankelijkheden, wachtende jobs en bronrechtenblokkades. Ze verwijdert niets en start geen opgeslagen jobs. Actuele opslag- en exportrechten worden voor alle bewaarde bronversies gecontroleerd bij back-up en herstel.
+
+Voor een volledige serverkopie is er een afzonderlijk beheercommando voor een gestopte server. Dit bevat accounts en clubgegevens en herstelt uitsluitend naar een nieuwe datamap; sessies en uitnodigingen worden niet hersteld. Lees [clubherstel](docs/WORKSPACE_RECOVERY.md), [versleuteling](docs/BACKUP_ENCRYPTION.md) en [serverback-up en herstelcommando's](docs/SERVER_BACKUP.md).
 
 ## Gecontroleerde lokale import
 
@@ -40,6 +48,7 @@ npm run verify
 npx playwright install chromium
 npm run test:browser
 npm run test:accounts
+npm run test:recovery
 npm run test:offline
 npm run test:cli
 ```
@@ -52,11 +61,11 @@ De Python-referentie heeft eigen tests, uitgevoerd vanuit `reference/python-prot
 python -m unittest discover -s tests -v
 ```
 
-Actuele commando's en ruwe resultaten staan in `reports/v0.3/` en `reports/current/`. Oudere bestanden in `reports/`, `handoff/checks/` en Python-`evidence/` zijn historisch bewijs. Het oorspronkelijke `HANDOFF_MANIFEST.json` controleert het invoerpakket; gewijzigde projectbestanden worden na ontwikkeling terecht als gewijzigd gerapporteerd.
+Actuele commando's en ruwe resultaten staan in `reports/v0.4/`. Eerder bewijs blijft in `reports/v0.3/` en `reports/current/` bewaard. Oudere bestanden in `reports/`, `handoff/checks/` en Python-`evidence/` zijn historisch bewijs. Het oorspronkelijke `HANDOFF_MANIFEST.json` controleert het invoerpakket; gewijzigde projectbestanden worden na ontwikkeling terecht als gewijzigd gerapporteerd.
 
 ## GitHub, ontwikkelworkers en hosting
 
-De volledige bronovername is gepubliceerd in [PR #1](https://github.com/chatgpt20251991/Scoutingtool/pull/1), branch `codex/omniscout-accounts`. Publicatie via de gekoppelde GitHub-integratie werkt nu. De v0.2-bronboom in commit `3f54df2fdee7ba285249c86b84846fad0eb4b63e` is exact gelijk aan de eerder geteste lokale bronboom; de bijbehorende GitHub Actions-run is geslaagd. De accountuitbreiding wordt in dezelfde PR aangeleverd. De actuele PR en het eindrapport geven de definitieve commit en CI-status.
+De volledige bronovername is gepubliceerd in [PR #1](https://github.com/chatgpt20251991/Scoutingtool/pull/1), branch `codex/omniscout-accounts`. Publicatie via de gekoppelde GitHub-integratie werkt nu. De v0.2-bronboom in commit `3f54df2fdee7ba285249c86b84846fad0eb4b63e` is exact gelijk aan de eerder geteste lokale bronboom; de bijbehorende GitHub Actions-run is geslaagd. V0.3 is gepubliceerd als commit `54e6dfd6c05b8bb2d35629ec98300902f7af5ceb` met geslaagde CI. V0.4 bouwt hierop voort op `codex/omniscout-recovery`. De actuele PR en het eindrapport geven de definitieve commit en CI-status.
 
 A/B/C zijn daadwerkelijk als subagents uitgevoerd; D controleerde de integratie onafhankelijk. Eén integrator beheert gedeelde bestanden en commits. GitHub Actions voert Node-, Python- en native Chromium-browsertests uit en bewaart browserbewijs als artifact.
 
@@ -66,4 +75,4 @@ De Cloudflare-handler blijft een afzonderlijke alleen-lezen synthetische demo. D
 
 Behoud onzekerheid en tegenbewijs. Null is geen nul. Zonder betrouwbare minuten volgt geen waarde per 90. Niet-aangesloten competities zijn geen talentloze competities. De gedocumenteerde en verkennende lijsten gebruiken uitlegbare demonstratieregels; geen universele talentscore of bewezen voorspelling.
 
-Accounts en clubscheiding zijn lokaal getest. Publieke TLS-hosting, MFA, wachtwoordherstel, versleutelde back-ups, retentie/verwijdering, externe identiteitscontrole en een onafhankelijke productieaudit ontbreken nog. Gebruik synthetische, niet-vertrouwelijke testgegevens. Bestaande accounts toevoegen aan een andere bestaande club is nog geen afzonderlijke workflow. Er is nog geen opensourcelicentie namens de eigenaar verleend. Het concrete vervolg staat in [NEXT_CODEX_TASK.md](docs/NEXT_CODEX_TASK.md).
+Accounts en clubscheiding zijn lokaal getest. Publieke TLS-hosting, MFA, wachtwoordherstel, daadwerkelijke retentieverwijdering, externe identiteitscontrole en een onafhankelijke productieaudit ontbreken nog. Actieve schijfgegevens en lokale vorige-statekopieën zijn niet versleuteld; de download- en serverback-ups zijn dat wel. Gebruik synthetische, niet-vertrouwelijke testgegevens. Er is nog geen opensourcelicentie namens de eigenaar verleend. Het concrete vervolg staat in [NEXT_CODEX_TASK.md](docs/NEXT_CODEX_TASK.md).

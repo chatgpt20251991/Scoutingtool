@@ -107,6 +107,11 @@ function validateState(state) {
   return state;
 }
 
+/** Validate a detached account document without opening storage or creating sessions. */
+export function validateAccountState(value) {
+  return validateState(structuredClone(value));
+}
+
 /** Local authentication domain. The caller must hold the data-directory process lock. */
 export async function createAuth({ path = null, now = () => new Date().toISOString() } = {}) {
   if (path !== null && (typeof path !== 'string' || !path.trim())) throw fail(400, 'Ongeldig accountopslagpad.');
@@ -206,6 +211,18 @@ export async function createAuth({ path = null, now = () => new Date().toISOStri
     entry.count += 1; loginGlobal.count += 1; attempts.set(key, entry);
   }
   function liveInvites(at) { return state.invitations.filter(invite => Date.parse(invite.expiresAt) > at); }
+  function invitationError() { return fail(400, 'Uitnodiging is ongeldig, verlopen of al gebruikt.'); }
+  function issuerAuthorized(invitation) {
+    return state.memberships.some(member => member.orgId === invitation.orgId
+      && member.userId === invitation.createdBy && member.role === 'owner');
+  }
+  function resolveInvitation(input, at = clock()) {
+    if (typeof input?.inviteToken !== 'string' || !TOKEN.test(input.inviteToken)) throw invitationError();
+    const key = Buffer.from(digest(input.inviteToken), 'hex');
+    const invitation = liveInvites(at).find(item => timingSafeEqual(Buffer.from(item.digest, 'hex'), key));
+    if (!invitation || !issuerAuthorized(invitation)) throw invitationError();
+    return invitation;
+  }
   function newMembership(orgId, userId, assignedRole, timestamp) {
     return { orgId, userId, role: assignedRole, createdAt: timestamp, updatedAt: timestamp };
   }
@@ -258,19 +275,49 @@ export async function createAuth({ path = null, now = () => new Date().toISOStri
       const inviteToken = opaque(), expiresAt = new Date(at + AUTH_LIMITS.invitationMs).toISOString();
       invitations.push({ digest: digest(inviteToken), orgId, role: assignedRole, createdBy: access.user.id, createdAt: new Date(at).toISOString(), expiresAt });
       await commit({ ...structuredClone(state), invitations });
-      return { token: inviteToken, expiresAt, role: assignedRole };
+      return { id: digest(inviteToken), token: inviteToken, expiresAt, role: assignedRole };
+    }),
+    invitations: (token, orgId) => enqueue(() => {
+      authorize(token, orgId, { owner: true });
+      return liveInvites(clock()).filter(item => item.orgId === orgId && issuerAuthorized(item)).map(item => ({
+        id: item.digest, role: item.role, createdAt: item.createdAt, expiresAt: item.expiresAt,
+      }));
+    }),
+    revokeInvitation: (token, orgId, inviteId) => enqueue(async () => {
+      authorize(token, orgId, { owner: true });
+      if (typeof inviteId !== 'string' || !HEX.test(inviteId)
+        || !state.invitations.some(item => item.orgId === orgId && item.digest === inviteId)) {
+        throw fail(404, 'Uitnodiging niet beschikbaar.');
+      }
+      const next = structuredClone(state);
+      next.invitations = next.invitations.filter(item => item.orgId !== orgId || item.digest !== inviteId);
+      await commit(next);
+      return { revoked: true };
+    }),
+    invitePreview: (token, input) => enqueue(() => {
+      const current = requireSession(token), invitation = resolveInvitation(input);
+      const organization = state.organizations.find(item => item.id === invitation.orgId);
+      const member = state.memberships.find(item => item.orgId === invitation.orgId && item.userId === current.userId);
+      return { organization: { id: organization.id, name: organization.name }, role: member?.role || invitation.role,
+        expiresAt: invitation.expiresAt, alreadyMember: !!member };
+    }),
+    acceptInvite: (token, input) => enqueue(async () => {
+      const current = requireSession(token), at = clock(), invitation = resolveInvitation(input, at);
+      const organization = state.organizations.find(item => item.id === invitation.orgId);
+      const member = state.memberships.find(item => item.orgId === invitation.orgId && item.userId === current.userId);
+      const next = structuredClone(state);
+      if (!member) next.memberships.push(newMembership(invitation.orgId, current.userId, invitation.role, new Date(at).toISOString()));
+      next.invitations = next.invitations.filter(item => item.digest !== invitation.digest && Date.parse(item.expiresAt) > at);
+      await commit(next);
+      return { organization: { id: organization.id, name: organization.name, role: member?.role || invitation.role }, alreadyMember: !!member };
     }),
     register: input => enqueue(async () => {
-      const invalid = () => fail(400, 'Uitnodiging is ongeldig, verlopen of al gebruikt.');
-      if (typeof input?.inviteToken !== 'string' || !TOKEN.test(input.inviteToken)) throw invalid();
-      const key = Buffer.from(digest(input.inviteToken), 'hex'), at = clock();
-      const invitation = liveInvites(at).find(item => timingSafeEqual(Buffer.from(item.digest, 'hex'), key));
-      if (!invitation || !state.memberships.some(member => member.orgId === invitation.orgId && member.userId === invitation.createdBy && member.role === 'owner')) throw invalid();
+      const invitation = resolveInvitation(input);
       const values = credentials(input);
       if (state.users.some(user => user.username === values.username)) throw fail(409, 'Deze gebruikersnaam is niet beschikbaar.');
       if (state.users.length >= AUTH_LIMITS.users) throw fail(409, 'Het maximum aantal accounts is bereikt.');
       const secret = await hashPassword(values.password), finishedAt = clock();
-      if (Date.parse(invitation.expiresAt) <= finishedAt) throw invalid();
+      if (Date.parse(invitation.expiresAt) <= finishedAt) throw invitationError();
       const timestamp = new Date(finishedAt).toISOString();
       const user = { id: randomUUID(), username: values.username, displayName: values.displayName, password: secret, createdAt: timestamp, updatedAt: timestamp };
       const next = structuredClone(state);

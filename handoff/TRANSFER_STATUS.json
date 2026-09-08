@@ -1,47 +1,51 @@
 {
   "date": "2026-09-08",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "repository": "chatgpt20251991/Scoutingtool",
   "repository_visibility": "public",
-  "branch": "codex/omniscout-accounts",
+  "branch": "codex/omniscout-recovery",
   "original_import_commit_local": "bf128367c69c6a8b2cb539f9fcae84b33e2f51d1",
   "github_published_v02_commit": "3f54df2fdee7ba285249c86b84846fad0eb4b63e",
   "github_pr": "https://github.com/chatgpt20251991/Scoutingtool/pull/1",
   "github_v02_actions_run": 34186674102,
-  "github_connector_write": "working; complete v0.2 source tree already published without force push",
-  "implementation": "Node v0.3 local accounts, club roles, isolated stores/queues, recoverable migration and scoped scouting/import workflow",
+  "github_connector_write": "working; previous full v0.3 source published, v0.4 final SHA/PR/CI recorded in external delivery report",
+  "implementation": "Node v0.4 encrypted club/server backups, controlled restores, read-only retention inventory and existing-account invitations",
   "python_reference": "45 files across reference, original archives and original attachments verified byte-for-byte unchanged",
   "development_workers": [
     {
       "task": "/root/v03_auth",
-      "package": "A auth and architecture",
+      "package": "A existing-account invitations and offline server backup",
       "status": "completed"
     },
     {
       "task": "/root/v03_organizations",
-      "package": "B organization storage, D independent review and Windows persistence",
+      "package": "B workspace recovery, retention and D independent security review",
       "status": "completed"
     },
     {
       "task": "/root/v03_ui",
-      "package": "C interface and native browser checks",
+      "package": "C UI, native browsers and independent CLI review",
       "status": "completed"
     }
   ],
   "tests": {
-    "offline_edge_passed": 10,
-    "legacy_browser_passed": 10,
-    "node_skipped": 0,
+    "node_passed": 217,
     "node_failed": 0,
-    "node_passed": 158,
-    "cli_startup_passed": 1,
+    "node_skipped": 0,
     "python_passed": 62,
-    "accounts_browser_passed": 12
+    "accounts_browser_passed": 12,
+    "recovery_browser_passed": 11,
+    "legacy_browser_passed": 10,
+    "offline_edge_passed": 10,
+    "cli_startup_passed": 1
   },
-  "raw_evidence": "reports/v0.3/",
+  "raw_evidence": "reports/v0.4/",
   "final_commit_reference": "Read the PR head SHA and the external delivery report; a committed document cannot contain its own future commit ID.",
   "deployment_url": null,
   "cloud_runtime_started": false,
   "live_data_connected": false,
-  "llm_provider_added": false
+  "llm_provider_added": false,
+  "github_published_v03_commit": "54e6dfd6c05b8bb2d35629ec98300902f7af5ceb",
+  "github_v03_actions_run": 34188188035,
+  "github_pr_note": "PR #1 contains v0.3. The v0.4 follow-up PR and exact final identifiers are in the external delivery report."
 }

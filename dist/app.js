@@ -37,7 +37,15 @@ let demoState = state;
 let environment = window.OMNI_INLINE || location.protocol === 'file:' ? 'standalone' : 'checking';
 let organizationId = '', epoch = 0, authMode = 'login', authError = '', authBusy = false, expiryTimer, sessionCheck;
 const requests = new Set();
-const accountUI = { members: [], stats: null, statsError: '', error: '', loading: false, invite: null, migrationRequired: false, migrationMessage: '' };
+const accountUI = { members: [], invitations: [], invitationsError: '', stats: null, statsError: '', error: '', loading: false, invite: null, migrationRequired: false, migrationMessage: '' };
+const recoveryUI = { invitePreview: null, backupPreview: null, retention: null, inviteError: '', backupError: '', retentionError: '', message: '', busy: false };
+let accountSequence = 0;
+function clearAccountTransient() {
+  accountSequence++; accountUI.invite = null;
+  Object.assign(recoveryUI, { invitePreview: null, backupPreview: null, retention: null, inviteError: '', backupError: '', retentionError: '', message: '', busy: false });
+}
+const accountContext = () => ({ ...context(), accountSequence });
+function assertAccountContext(ctx) { assertContext(ctx); if (ctx.accountSequence !== accountSequence || view !== 'account') throw staleError(); }
 const membership = () => backend?.organizations?.find(org => org.id === organizationId);
 const roleLabels = { owner: 'Eigenaar', scout: 'Scout', viewer: 'Alleen lezen' };
 const isAccounts = () => environment === 'local_accounts';
@@ -70,7 +78,8 @@ function clearWorkspace() {
   dossierDialog.close(); actionDialog.close(); document.querySelector('#dossier-content').replaceChildren(); document.querySelector('#action-content').replaceChildren();
   document.querySelector('#toast').textContent = ''; document.querySelector('#toast').className = 'toast';
   Object.assign(importUI, { payload: null, preview: null, filename: '', error: '', busy: false, sequence: importUI.sequence + 1, jobs: [], snapshots: [], jobsError: '', jobsLoading: false, rolledBack: new Set() });
-  Object.assign(accountUI, { members: [], stats: null, statsError: '', error: '', loading: false, invite: null, migrationRequired: false, migrationMessage: '' });
+  clearAccountTransient();
+  Object.assign(accountUI, { members: [], invitations: [], invitationsError: '', stats: null, statsError: '', error: '', loading: false, invite: null, migrationRequired: false, migrationMessage: '' });
   main.replaceChildren();
 }
 function loseSession(message = 'Je sessie is verlopen. Meld je opnieuw aan.') {
@@ -168,6 +177,7 @@ function updateCounts() {
   applyAccess();
 }
 function applyAccess() {
+  if (view === 'account' && (accountUI.loading || datasetLoading)) document.querySelectorAll('#main form input, #main form textarea, #main form select, #main form [type="submit"]').forEach(control => { control.disabled = true; });
   if (canWrite()) return;
   document.querySelectorAll('[data-save], [data-task], [data-action="create-task"], [data-action="decision"], [data-import-retry], [data-import-rollback], #import-file, #import-confirm, #brief-form [type="submit"], #brief-form input, #brief-form textarea, #brief-form select').forEach(el => { el.disabled = true; el.title = 'Alleen lezen: een eigenaar kan je de scoutrol geven.'; });
 }
@@ -188,6 +198,27 @@ function renderAccount() {
     document.querySelector('#workspace-stats').innerHTML = '<p class="form-note">Maak een nieuwe clubwerkruimte aan om scoutinggegevens op te slaan.</p>';
     document.querySelector('.account-grid section>.form-note').textContent = 'Je account heeft momenteel geen clubtoegang. Je kunt zelf een nieuwe club aanmaken.';
   }
+  renderAccountRecovery();
+}
+function renderAccountRecovery() {
+  const owner = membership()?.role === 'owner', disabled = recoveryUI.busy ? 'disabled' : '';
+  const invitations = document.querySelector('#invite-form');
+  if (invitations) invitations.insertAdjacentHTML('beforeend', `<div id="outstanding-invitations" class="outstanding-invitations"><h3>Openstaande uitnodigingen</h3><p class="form-note">Alleen geldige, nog niet gebruikte uitnodigingen. Codes worden hier niet opnieuw getoond.</p>${accountUI.invitationsError ? `<p class="import-error" role="alert">${esc(accountUI.invitationsError)}</p>` : ''}${accountUI.invitations.length ? `<ul>${accountUI.invitations.map(invitation => `<li><div><strong>${esc(roleLabels[invitation.role])}</strong><small>Aangemaakt ${dates(invitation.createdAt)} · geldig tot ${esc(new Date(invitation.expiresAt).toLocaleString('nl-NL'))}</small></div><button type="button" class="button secondary compact" data-revoke-invitation="${esc(invitation.id)}">Intrekken</button></li>`).join('')}</ul>` : '<p class="muted-copy">Geen openstaande uitnodigingen.</p>'}</div>`);
+  const preview = recoveryUI.invitePreview;
+  main.insertAdjacentHTML('beforeend', `<section class="panel form-panel recovery-section"><h2>Sluit met je account aan bij een club</h2><p class="form-note">Controleer eerst de club en rol uit de uitnodiging. Bevestig daarna dat je wilt aansluiten.</p><form id="invite-preview-form"><label>Eenmalige uitnodigingscode<input name="inviteToken" required maxlength="200" autocomplete="off" spellcheck="false" autocapitalize="none"></label><button type="submit" class="button secondary" data-recovery-submit ${disabled}>Uitnodiging controleren</button></form>${recoveryUI.inviteError ? `<p class="import-error" role="alert">${esc(recoveryUI.inviteError)}</p>` : ''}${preview ? `<form id="invite-accept-form" class="invitation-preview"><h3>${esc(preview.organization.name)}</h3><p class="form-note">Aangeboden rol: ${esc(roleLabels[preview.role])}. Geldig tot ${esc(new Date(preview.expiresAt).toLocaleString('nl-NL'))}.${preview.alreadyMember ? ' Je bent al lid. Je bestaande rol blijft behouden; deze code verhoogt je rechten niet.' : ''}</p><label class="import-consent"><input type="checkbox" id="invite-accept-check" required><span>Ik heb de club en rol gecontroleerd en wil deze uitnodiging met mijn account gebruiken.</span></label><button type="submit" class="button primary" data-recovery-submit ${disabled}>Bevestig aansluiting</button></form>` : ''}</section>`);
+  if (recoveryUI.message) main.insertAdjacentHTML('beforeend', `<p class="notice-card" id="recovery-message" role="status">${esc(recoveryUI.message)}</p>`);
+  if (!owner) return;
+  main.insertAdjacentHTML('beforeend', `<section class="panel form-panel recovery-section" id="backup-panel"><h2>Versleutelde clubback-up en herstel</h2><p class="form-note">Een back-up bevat de fictieve demo én lokale imports met het scoutingwerk van <strong>${esc(membership().name)}</strong>. Accounts en clubrollen staan niet in dit bestand. Bronrechten worden ook voor eerdere en teruggedraaide snapshots gecontroleerd.</p><div class="backup-grid"><form id="backup-create-form"><h3>Back-up downloaden</h3><label>Wachtzin<input type="password" name="passphrase" required minlength="15" maxlength="128" autocomplete="new-password" aria-describedby="backup-passphrase-help"></label><p class="form-note" id="backup-passphrase-help">Gebruik 15–128 tekens en bewaar de wachtzin apart. De toepassing bewaart deze niet. Zonder de juiste wachtzin kan het .osbackup-bestand niet worden geopend.</p><button type="submit" class="button primary" data-recovery-submit ${disabled}>Versleutelde back-up downloaden</button></form><form id="backup-preview-form"><h3>Back-up controleren voor herstel</h3><label>Versleuteld .osbackup-bestand<input id="backup-file" name="backupFile" type="file" required accept=".osbackup,application/json" aria-describedby="backup-file-help"></label><p class="form-note" id="backup-file-help">Maximaal 46 MiB. Alleen een back-up van dezezelfde club kan worden hersteld.</p><label>Wachtzin van het bestand<input type="password" name="passphrase" required minlength="15" maxlength="128" autocomplete="off"></label><button type="submit" class="button secondary" data-recovery-submit ${disabled}>Herstel eerst controleren</button></form></div>${recoveryUI.backupError ? `<p class="import-error" id="backup-error" role="alert">${esc(recoveryUI.backupError)}</p>` : ''}${recoveryUI.backupPreview ? renderBackupPreview(recoveryUI.backupPreview) : ''}</section><section class="panel form-panel recovery-section" id="retention-panel"><h2>Bewaartermijnen onderzoeken</h2><p class="form-note">Dit overzicht markeert oudere gegevens, afhankelijkheden, lopende taken en huidige rechtenblokkades. Er wordt niets verwijderd. Een leeftijdsgrens is geen juridische bewaartermijn.</p><form id="retention-form" class="retention-controls"><label>Ouder dan hoeveel dagen?<input name="days" type="number" required min="1" max="3650" step="1" value="${esc(recoveryUI.retention?.days || 365)}"></label><button type="submit" class="button secondary" data-recovery-submit ${disabled}>Bewaaroverzicht bekijken</button></form>${recoveryUI.retentionError ? `<p class="import-error" role="alert">${esc(recoveryUI.retentionError)}</p>` : ''}<div id="retention-report" aria-live="polite">${recoveryUI.retention ? renderRetention(recoveryUI.retention) : ''}</div></section>`);
+}
+function renderBackupPreview(preview) {
+  const backup = preview.summary, current = preview.currentSummary;
+  const fields = [['Demo · besluiten', value => value.counts.demo.decisions], ['Demo · onderzoeken', value => value.counts.demo.tasks], ['Demo · logboekregels', value => value.counts.demo.audit], ['Import · besluiten', value => value.counts.import.decisions], ['Import · onderzoeken', value => value.counts.import.tasks], ['Import · logboekregels', value => value.counts.import.audit], ['Snapshots', value => value.counts.snapshots], ['Importgebeurtenissen', value => value.counts.importHistory], ['Importopdrachten', value => value.counts.jobs], ['Bronnen', value => value.counts.sources], ['Spelers', value => value.counts.players], ['Competities', value => value.counts.competitions], ['Bytes onversleuteld', value => value.bytes]];
+  return `<div id="backup-preview" class="backup-preview"><h3>Vergelijk vóór vervangen</h3><p class="form-note">Back-up van ${esc(backup.organizationName)} · gemaakt ${esc(new Date(backup.createdAt).toLocaleString('nl-NL'))}. Deze controle is geldig tot ${esc(new Date(preview.expiresAt).toLocaleString('nl-NL'))}.</p><div class="table-scroll"><table class="backup-summary"><thead><tr><th>Onderdeel</th><th>Nu in club</th><th>In back-up</th></tr></thead><tbody>${fields.map(([label, get]) => `<tr><th>${label}</th><td>${fmt(get(current), 0)}</td><td>${fmt(get(backup), 0)}</td></tr>`).join('')}</tbody></table></div><form id="backup-restore-form"><p class="form-note">Herstel vervangt het scoutingwerk van beide datasets in deze club. Accounts en rollen blijven behouden. Voor vervanging wordt de huidige staat als een private lokale herstelkopie bewaard. Die lokale kopie is geen versleuteld downloadbestand. Wijzigingen na deze controle vereisen een nieuwe controle.</p><label class="import-consent"><input type="checkbox" id="backup-restore-check" required><span>Ik heb de aantallen gecontroleerd en wil de huidige demo- en importgegevens van ${esc(membership()?.name)} vervangen door deze back-up.</span></label><button type="submit" class="button primary" data-recovery-submit ${recoveryUI.busy ? 'disabled' : ''}>Bevestig vervanging van clubgegevens</button></form></div>`;
+}
+function renderRetention(report) {
+  const labels = { ageCandidates: 'Ouder dan gekozen grens', activeDependencies: 'Actieve afhankelijkheden', pendingJobs: 'Lopende importopdrachten', rightsBlocks: 'Rechtenblokkades', totalItems: 'Beoordeelde onderdelen', returnedItems: 'Getoonde onderdelen' };
+  const kinds = { decision: 'Besluit', task: 'Onderzoek', audit: 'Logboekregel', history: 'Importgebeurtenis', source: 'Bron', snapshot: 'Snapshot', job: 'Importopdracht' };
+  return `<p class="form-note">Peildatum ${esc(new Date(report.asOf).toLocaleString('nl-NL'))} · grens ${dates(report.cutoff)} · alleen beoordeling, niets verwijderd.</p><dl class="account-stats retention-stats">${Object.entries(labels).map(([key, label]) => `<div><dt>${label}</dt><dd>${fmt(report.counts[key], 0)}</dd></div>`).join('')}</dl>${report.warnings?.length ? `<ul class="retention-warnings">${report.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul>` : ''}<ul class="retention-items">${report.items.slice(0, 200).map(item => `<li data-retention-item><div><strong>${esc(kinds[item.kind] || item.kind)} · ${esc(item.dataset === 'demo' ? 'Fictieve demo' : item.dataset === 'import' ? 'Lokale import' : item.dataset || 'Club')}</strong><small>${esc(item.id)} · ${dates(item.at)}</small></div><p>${esc(item.reason)}</p><div class="retention-tags">${item.ageCandidate ? '<span class="status-tag amber">Ouder · te beoordelen</span>' : ''}${item.activeDependency ? '<span class="status-tag neutral">Actieve afhankelijkheid · behouden</span>' : ''}${item.rightsBlocked ? '<span class="status-tag amber">Huidige rechten blokkeren gebruik</span>' : ''}</div></li>`).join('')}</ul>${report.truncated ? '<p class="form-note">Het overzicht is begrensd op 200 onderdelen. De totale aantallen staan hierboven.</p>' : ''}`;
 }
 function renderStats(stats) {
   const rows = [];
@@ -202,11 +233,13 @@ async function loadAccount() {
   const ctx = context(); accountUI.loading = true; accountUI.error = ''; accountUI.statsError = ''; if (view === 'account') render();
   try {
     if (!organizationId) { accountUI.members = []; accountUI.stats = {}; return; }
-    const [memberResult, statsResult] = await Promise.allSettled([membership()?.role === 'owner' ? readJSON('/api/auth/members') : Promise.resolve([]), readJSON('/api/workspace/stats')]); assertContext(ctx);
+    const [memberResult, statsResult, invitationResult] = await Promise.allSettled([membership()?.role === 'owner' ? readJSON('/api/auth/members') : Promise.resolve([]), readJSON('/api/workspace/stats'), membership()?.role === 'owner' ? readJSON('/api/auth/invitations') : Promise.resolve([])]); assertContext(ctx);
     if (memberResult.status === 'fulfilled') accountUI.members = Array.isArray(memberResult.value) ? memberResult.value : memberResult.value.members || [];
     else accountUI.error = memberResult.reason.message;
     if (statsResult.status === 'fulfilled') { accountUI.stats = statsResult.value; accountUI.migrationRequired = false; }
     else { accountUI.statsError = statsResult.reason.message; accountUI.migrationRequired = statsResult.reason.status === 409 && /migratie|oude opslag/i.test(statsResult.reason.message); }
+    if (invitationResult.status === 'fulfilled') { accountUI.invitations = Array.isArray(invitationResult.value) ? invitationResult.value : invitationResult.value.invitations || []; accountUI.invitationsError = ''; }
+    else accountUI.invitationsError = invitationResult.reason.message;
   } catch (error) { if (ctx.epoch === epoch && !error.stale) accountUI.error = error.message; }
   finally { if (ctx.epoch === epoch) { accountUI.loading = false; if (view === 'account') render(); } }
 }
@@ -380,7 +413,7 @@ function render() {
   if (!canWrite() && !datasetLoading && view !== 'account') main.insertAdjacentHTML('afterbegin', `<div class="notice-card read-only-notice" role="status"><p>${environment === 'edge' ? 'Alleen-lezen synthetische demo. Open de lokale Node-app voor eigen scoutingwerk.' : 'Je hebt alleen leesrechten in deze club. Een eigenaar kan je de scoutrol geven om scoutingwerk en imports te wijzigen.'}</p></div>`);
   updateCounts();
 }
-function navigate(next) { if (!viewLabels[next] || next === 'account' && !isAuthenticated()) return; if (next !== 'account') accountUI.invite = null; view = next; render(); if (next === 'import') void loadImportJobs(); if (next === 'account') void loadAccount(); window.scrollTo({ top: 0, behavior: 'instant' }); }
+function navigate(next) { if (!viewLabels[next] || next === 'account' && !isAuthenticated()) return; if (next !== 'account') clearAccountTransient(); view = next; render(); if (next === 'import') void loadImportJobs(); if (next === 'account') void loadAccount(); window.scrollTo({ top: 0, behavior: 'instant' }); }
 function showDossier(id) {
   const d = buildDossier(catalog.players.find(p => p.id === id), catalog); if (!d) return;
   openPlayerId = id;
@@ -433,6 +466,10 @@ document.addEventListener('click', async event => {
       return;
     }
     if (el.dataset.action === 'account-refresh') { await checkSession(); await loadAccount(); return; }
+    if (el.dataset.revokeInvitation) {
+      if (membership()?.role !== 'owner') throw new Error('Alleen een eigenaar kan uitnodigingen intrekken.');
+      openAction('Uitnodiging intrekken', `<form id="revoke-invitation-form" data-id="${esc(el.dataset.revokeInvitation)}"><p class="muted-copy">Deze openstaande uitnodiging voor ${esc(membership().name)} kan na intrekking niet meer worden gebruikt. Bestaande clubleden behouden hun toegang.</p><button type="submit" class="button primary" data-recovery-submit>Bevestig intrekken</button></form>`); return;
+    }
     if (el.dataset.action === 'recover-migration') {
       if (membership()?.role !== 'owner') throw new Error('Alleen een eigenaar kan de eerdere opslag herstellen.');
       el.disabled = true;
@@ -507,6 +544,81 @@ document.addEventListener('click', async event => {
 });
 document.addEventListener('submit', async event => {
   const form = event.target;
+  if (!['invite-preview-form', 'invite-accept-form', 'revoke-invitation-form', 'backup-create-form', 'backup-preview-form', 'backup-restore-form', 'retention-form'].includes(form.id)) return;
+  event.preventDefault(); const submit = form.querySelector('[type="submit"]'); if (submit.disabled || recoveryUI.busy) return;
+  const ctx = accountContext(), data = Object.fromEntries(new FormData(form));
+  const file = form.id === 'backup-preview-form' ? form.querySelector('#backup-file').files?.[0] : null;
+  const confirmed = form.querySelector('input[type="checkbox"]')?.checked === true;
+  const area = form.id.startsWith('invite-') || form.id === 'revoke-invitation-form' ? 'inviteError' : form.id === 'retention-form' ? 'retentionError' : 'backupError';
+  recoveryUI[area] = ''; recoveryUI.message = ''; recoveryUI.busy = true;
+  document.querySelectorAll('[data-recovery-submit]').forEach(button => { button.disabled = true; });
+  // Keep selected file and credentials only in this active operation; clear the inputs immediately.
+  if (['invite-preview-form', 'backup-create-form', 'backup-preview-form'].includes(form.id)) form.reset();
+  try {
+    if (!isAuthenticated()) throw new Error('Meld je opnieuw aan.');
+    if (form.id === 'invite-preview-form') {
+      recoveryUI.invitePreview = null; document.querySelector('#invite-accept-form')?.remove();
+      const preview = await api('/api/auth/invite-preview', { method: 'POST', data: { inviteToken: data.inviteToken } }); assertAccountContext(ctx);
+      recoveryUI.invitePreview = { ...preview, token: data.inviteToken }; return;
+    }
+    if (form.id === 'invite-accept-form') {
+      const preview = recoveryUI.invitePreview;
+      if (!preview || !confirmed) throw new Error('Controleer de uitnodiging en bevestig de club en rol eerst.');
+      recoveryUI.invitePreview = null;
+      const accepted = await api('/api/auth/accept-invite', { method: 'POST', data: { inviteToken: preview.token } }); assertAccountContext(ctx);
+      clearWorkspace(); organizationId = accepted.organization.id; datasetLoading = true; render();
+      await checkSession({ reload: true }); await loadAccount();
+      recoveryUI.message = accepted.alreadyMember ? 'Uitnodiging gebruikt. Je bestaande clubrol is behouden.' : 'Uitnodiging geaccepteerd. De club is aan je account toegevoegd.';
+      render(); return;
+    }
+    if (membership()?.role !== 'owner') throw new Error('Alleen een eigenaar beheert back-ups, herstel, bewaartermijnen en uitnodigingen.');
+    if (form.id === 'revoke-invitation-form') {
+      await api(`/api/auth/invitations/${encodeURIComponent(form.dataset.id)}`, { method: 'DELETE', data: {} }); assertAccountContext(ctx);
+      actionDialog.close(); document.querySelector('#action-content').replaceChildren();
+      await loadAccount(); assertAccountContext(ctx); recoveryUI.message = 'Uitnodiging ingetrokken. De code is niet meer te gebruiken.'; return;
+    }
+    if (form.id === 'backup-create-form') {
+      const envelope = await api('/api/backup/create', { method: 'POST', data: { passphrase: data.passphrase }, raw: true }); assertAccountContext(ctx);
+      download(`OmniScout-clubbackup-${new Date().toISOString().slice(0, 10)}.osbackup`, envelope, 'application/json');
+      recoveryUI.message = 'Versleutelde clubback-up klaargezet als download. Bewaar het bestand en de wachtzin apart.'; return;
+    }
+    if (form.id === 'backup-preview-form') {
+      recoveryUI.backupPreview = null; document.querySelector('#backup-preview')?.remove();
+      if (!file || file.size === 0) throw new Error('Kies een versleuteld .osbackup-bestand.');
+      if (file.size > 46 * 1024 * 1024) throw new Error('Het back-upbestand is groter dan 46 MiB.');
+      let envelope; try { envelope = JSON.parse(await file.text()); } catch { throw new Error('Het gekozen bestand is geen geldig JSON-back-upbestand.'); }
+      assertAccountContext(ctx);
+      const preview = await api('/api/backup/preview', { method: 'POST', data: { envelope, passphrase: data.passphrase } }); assertAccountContext(ctx);
+      recoveryUI.backupPreview = preview; return;
+    }
+    if (form.id === 'backup-restore-form') {
+      const preview = recoveryUI.backupPreview;
+      if (!preview || !confirmed) throw new Error('Controleer de back-up en bevestig de vervanging eerst.');
+      recoveryUI.backupPreview = null;
+      if (Date.parse(preview.expiresAt) <= Date.now()) throw new Error('De herstelcontrole is verlopen. Kies het bestand opnieuw voor een actuele controle.');
+      const result = await api('/api/backup/restore', { method: 'POST', data: { previewId: preview.previewId, confirm: true } }); assertAccountContext(ctx);
+      if (!result.restored) throw new Error('De backend heeft geen geslaagd herstel bevestigd.');
+      clearWorkspace(); datasetLoading = true; render();
+      await checkSession({ reload: true }); await loadAccount();
+      recoveryUI.message = 'Clubgegevens hersteld. De vorige staat is als private lokale herstelkopie behouden; accounts en rollen zijn ongewijzigd.'; render(); return;
+    }
+    if (form.id === 'retention-form') {
+      recoveryUI.retention = null; const days = Number(data.days);
+      if (!Number.isInteger(days) || days < 1 || days > 3650) throw new Error('Kies een heel aantal dagen van 1 tot en met 3650.');
+      const report = await readJSON(`/api/retention/preview?days=${days}`); assertAccountContext(ctx);
+      recoveryUI.retention = report;
+    }
+  } catch (error) {
+    if (!error.stale && ctx.epoch === epoch && ctx.accountSequence === accountSequence && view === 'account') recoveryUI[area] = error.message || 'Deze bewerking is mislukt.';
+    else if (error.status === 403 && ctx.organizationId === organizationId) notify(error.message, true);
+    if (form.id === 'revoke-invitation-form' && ctx.epoch === epoch) { actionDialog.close(); document.querySelector('#action-content').replaceChildren(); }
+  } finally {
+    delete data.passphrase; delete data.inviteToken; delete data.backupFile;
+    if (ctx.epoch === epoch && ctx.organizationId === organizationId && ctx.accountSequence === accountSequence && view === 'account') { recoveryUI.busy = false; render(); }
+  }
+});
+document.addEventListener('submit', async event => {
+  const form = event.target;
   if (!['auth-form', 'organization-form', 'password-form', 'invite-form', 'remove-member-form'].includes(form.id) && !form.matches('.member-role-form')) return;
   event.preventDefault();
   const submit = form.querySelector('[type="submit"]'); if (submit.disabled) return; submit.disabled = true;
@@ -520,14 +632,14 @@ document.addEventListener('submit', async event => {
     if (!isAuthenticated()) throw new Error('Meld je opnieuw aan.');
     if (form.id === 'organization-form') {
       const result = await api('/api/auth/organizations', { method: 'POST', data }); assertContext(ctx); form.reset();
-      const id = result.organization?.id || result.id; if (id) organizationId = id;
+      const id = result.organization?.id || result.id; if (id) { clearWorkspace(); organizationId = id; datasetLoading = true; render(); }
       await checkSession({ reload: true }); notify('Nieuwe clubwerkruimte aangemaakt.'); return;
     }
     if (form.id === 'password-form') {
       await api('/api/auth/password', { method: 'POST', data }); assertContext(ctx); form.reset(); await checkSession({ reload: true }); notify('Wachtwoord gewijzigd. Andere sessies zijn afgesloten.'); return;
     }
     if (membership()?.role !== 'owner') throw new Error('Alleen een eigenaar beheert clubleden.');
-    if (form.id === 'invite-form') { const invite = await api('/api/auth/invites', { method: 'POST', data }); assertContext(ctx); accountUI.invite = invite; render(); document.querySelector('#invite-code')?.focus(); return; }
+    if (form.id === 'invite-form') { const inviteCtx = accountContext(); accountUI.invite = null; form.querySelector('.invite-result')?.remove(); const invite = await api('/api/auth/invites', { method: 'POST', data }); assertAccountContext(inviteCtx); accountUI.invite = invite; await loadAccount(); assertAccountContext(inviteCtx); document.querySelector('#invite-code')?.focus(); return; }
     if (form.matches('.member-role-form')) { await api(`/api/auth/members/${encodeURIComponent(form.dataset.user)}`, { method: 'PATCH', data }); assertContext(ctx); await checkSession({ reload: true }); await loadAccount(); notify('Rol gewijzigd.'); return; }
     if (form.id === 'remove-member-form') { await api(`/api/auth/members/${encodeURIComponent(form.dataset.user)}`, { method: 'DELETE', data: {} }); assertContext(ctx); actionDialog.close(); await checkSession({ reload: true }); await loadAccount(); notify('Clubtoegang verwijderd.'); }
   } catch (error) {

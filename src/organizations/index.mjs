@@ -1,9 +1,10 @@
-import { lstat, mkdir, open, readFile, realpath, rename, unlink, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, open, readFile, readdir, realpath, rename, unlink, writeFile } from 'node:fs/promises';
 import { isAbsolute, join, relative, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
-import { createStore, emptyState } from '../store.mjs';
+import { createStore, emptyState, replaceFileAtomically } from '../store.mjs';
 import { emptyImportState, MAX_IMPORT_BYTES, previewImport } from '../import/index.mjs';
 import { createImportQueue, MAX_IMPORT_JOBS, MAX_PENDING_IMPORT_JOBS, MAX_IMPORT_ATTEMPTS } from '../ingestion/index.mjs';
+import { stateDigest, validateWorkspaceState } from '../backup/workspace.mjs';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const LOCK = '.organization-manager.lock';
@@ -11,6 +12,7 @@ const CLAIM = 'legacy-claim.json';
 const RECEIPT = '_legacyMigration';
 const MAX_LEGACY_BYTES = 512 * 1024 * 1024;
 const MAX_ORGANIZATIONS = 50;
+const MAX_RECOVERY_COPIES = 10;
 const sensitive = /^(?:password(?:hash|salt)?|passwd|credentials?|secret|clientsecret|apikey|accesskey|privatekey|token|accesstoken|refreshtoken|sessiontoken|invitetoken|authorization|cookie|sessions?|accounts|users|invitations)$/i;
 const error = (message, status = 409) => Object.assign(new Error(message), { status });
 const plain = value => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -43,7 +45,7 @@ async function atomicJSON(path, value) {
   const temporary = `${path}.${randomUUID()}.tmp`;
   try {
     await writeFile(temporary, JSON.stringify(value, null, 2), { flag: 'wx', mode: 0o600, flush: true });
-    await rename(temporary, path);
+    await replaceFileAtomically(temporary, path);
   } catch (e) { await unlink(temporary).catch(() => {}); throw e; }
 }
 function sanitize(value, depth = 0) {
@@ -122,6 +124,7 @@ export async function createOrganizationManager({ dataDir = null, legacyStatePat
   const timestamp = () => new Date(typeof now === 'function' ? now() : now).toISOString();
   let lock = null, claim = null, serial = Promise.resolve(), closePromise = null, accepting = true;
   const entries = new Map();
+  const memoryRecovery = new Map();
 
   async function acquire() {
     if (!root) return;
@@ -213,6 +216,40 @@ export async function createOrganizationManager({ dataDir = null, legacyStatePat
     try { raw = JSON.parse(bytes.toString('utf8')); } catch { throw error('Oud statebestand bevat ongeldige JSON; bronbestand behouden.'); }
     return { state: legacyState(raw), digest: createHash('sha256').update(bytes).digest('hex') };
   }
+  function scoutingState(raw) {
+    // Only manager-owned metadata is deliberately excluded. Any other unexpected
+    // field survives to strict validation and causes a failure rather than loss.
+    const { _legacyMigration, _workspaceRestore, ...state } = raw;
+    return state;
+  }
+  function noMigrationPending(id) {
+    if (claim?.organizationId === id && claim.status === 'pending') throw error('Oude opslagmigratie vereist herstel door de eigenaar.');
+  }
+  async function recoveryCopies(id) {
+    if (!root) return { copies: memoryRecovery.get(id) || [], folder: null };
+    await paths(id);
+    const folder = join(root, 'organizations', id, 'recovery');
+    if (!await exists(folder)) return { copies: [], folder };
+    await directory(folder);
+    const copies = await readdir(folder);
+    for (const name of copies) {
+      if (!/^[a-f0-9-]{36}\.json$/.test(name) || !UUID.test(name.slice(0, -5))) throw error('Herstelmap bevat een onbekend bestand; archiveer of herstel dit handmatig.');
+      await regularFile(join(folder, name));
+    }
+    return { copies, folder };
+  }
+  async function saveRecovery(id, previous, digest, recoveryId, at) {
+    const { copies, folder } = await recoveryCopies(id);
+    if (copies.length >= MAX_RECOVERY_COPIES) throw error('Maximaal 10 lokale herstelkopieën. Archiveer gecontroleerd voordat je opnieuw herstelt.');
+    const record = { format: 'omniscout-private-recovery', version: 1, organizationId: id, recoveryId, createdAt: at, previousDigest: digest, state: structuredClone(previous) };
+    if (root) {
+      await directory(folder);
+      const destination = join(folder, `${recoveryId}.json`);
+      if (await exists(destination)) throw error('Herstel-ID bestaat al; bestaande herstelkopie behouden.');
+      await atomicJSON(destination, record);
+      await syncDirectory(folder);
+    } else { memoryRecovery.set(id, [...copies, record]); }
+  }
 
   const manager = {
     get(orgId) {
@@ -262,6 +299,53 @@ export async function createOrganizationManager({ dataDir = null, legacyStatePat
         return { claimed: true, organizationId: id, reason: 'migrated' };
       });
     },
+    capture(orgId, { drain = true } = {}) {
+      return perform(async () => {
+        const id = organizationId(orgId); noMigrationPending(id);
+        if (typeof drain !== 'boolean') throw error('Ongeldige opnameoptie.', 400);
+        // A retention-only read must not initialize a queue and start persisted
+        // work. Reuse an existing store or load it without creating a queue.
+        const entry = drain ? await openEntry(id) : entries.get(id);
+        if (drain) await entry.queue.idle();
+        const raw = entry?.raw || await rawStore(id);
+        const checked = validateWorkspaceState(scoutingState(await raw.read()), { now: timestamp(), checkRights: false, allowPending: !drain });
+        return { state: checked.state, digest: checked.digest };
+      });
+    },
+    restore(orgId, { state: input, expectedDigest, actor, backupDigest, authorize } = {}) {
+      return perform(async () => {
+        const id = organizationId(orgId); noMigrationPending(id);
+        if (!/^[a-f0-9]{64}$/.test(expectedDigest) || !/^[a-f0-9]{64}$/.test(backupDigest) || typeof actor !== 'string' || !UUID.test(actor)) throw error('Ongeldige herstelbevestiging of actor.', 400);
+        if (authorize !== undefined && typeof authorize !== 'function') throw error('Ongeldige herstelauthorisatie.', 400);
+        const entry = await openEntry(id);
+        await entry.queue.idle();
+        await authorize?.();
+        const checked = validateWorkspaceState(input, { now: timestamp() });
+        if (checked.digest !== backupDigest) throw error('Herstelinhoud komt niet overeen met de gecontroleerde back-up.', 400);
+        const previous = await entry.raw.read(), digest = stateDigest(scoutingState(previous));
+        if (digest !== expectedDigest) throw error('De clubwerkruimte is gewijzigd sinds de herstelpreview. Maak een nieuwe preview.');
+        // Making a private copy must not bypass rights on the currently retained
+        // data either. Capture alone is readable without this permission check.
+        validateWorkspaceState(scoutingState(previous), { now: timestamp() });
+        const recoveryId = randomUUID(), at = timestamp();
+        await saveRecovery(id, previous, digest, recoveryId, at);
+        await authorize?.();
+        const result = await entry.raw.update(state => {
+          if (stateDigest(scoutingState(state)) !== expectedDigest) throw error('De clubwerkruimte is gewijzigd tijdens herstel.');
+          const restored = validateWorkspaceState(checked.state, { now: timestamp() }).state;
+          const receipt = state[RECEIPT];
+          for (const key of Object.keys(state)) delete state[key];
+          Object.assign(state, restored);
+          state.imports ??= emptyImportState();
+          state.importJobs ??= [];
+          if (receipt !== undefined) state[RECEIPT] = receipt;
+          state._workspaceRestore = { version: 1, recoveryId, backupDigest, actor, restoredAt: at };
+          state.audit.push({ id: randomUUID(), action: 'workspace.restored', objectId: recoveryId, detail: 'Scoutingwerkruimte hersteld uit een gecontroleerde clubback-up.', at, actor });
+          return { restored: true, recoveryId, digest: stateDigest(scoutingState(state)) };
+        });
+        return result;
+      });
+    },
     stats(orgId) {
       return perform(async () => {
         const id = organizationId(orgId);
@@ -272,9 +356,10 @@ export async function createOrganizationManager({ dataDir = null, legacyStatePat
         return {
           mode: root ? 'local_file' : 'memory', organizationId: id,
           counts: { demo: counts(state), import: counts(state.importWorkspace), snapshots: imports.snapshots.length, importHistory: imports.history.length,
-            jobs: jobs.length, pendingJobs: jobs.filter(job => ['queued', 'running'].includes(job.status)).length, failedJobs: jobs.filter(job => job.status === 'failed').length },
+            jobs: jobs.length, pendingJobs: jobs.filter(job => ['queued', 'running'].includes(job.status)).length, failedJobs: jobs.filter(job => job.status === 'failed').length,
+            recoveryCopies: (await recoveryCopies(id)).copies.length },
           limits: { organizations: MAX_ORGANIZATIONS, tasksPerDataset: 2000, auditEvents: 20000, snapshots: 200, importJobs: MAX_IMPORT_JOBS,
-            pendingImportJobs: MAX_PENDING_IMPORT_JOBS, importAttempts: MAX_IMPORT_ATTEMPTS, importBytes: MAX_IMPORT_BYTES },
+            pendingImportJobs: MAX_PENDING_IMPORT_JOBS, importAttempts: MAX_IMPORT_ATTEMPTS, importBytes: MAX_IMPORT_BYTES, recoveryCopies: MAX_RECOVERY_COPIES },
           migration: claim?.organizationId === id ? claim.status : 'none'
         };
       });

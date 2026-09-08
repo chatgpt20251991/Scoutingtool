@@ -1,8 +1,8 @@
-# Architectuur van versie 0.3.0
+# Architectuur van versie 0.4.0
 
 **8 september 2026.** Node.js 22+ is het hoofdproject, met ingebouwde Node-modules en zonder externe npm-afhankelijkheden voor de toepassing. De volledige Python-app blijft ongewijzigd als referentie in `reference/python-prototype/`. De productambitie in `BUILD_BRIEF.md` blijft het langetermijnontwerp; de huidige toepassing is een lokaal onderzoeksprototype met accounts, clubrollen, gescheiden organisaties en gecontroleerde JSON-import.
 
-GitHub-publicatie is hervat: [PR #1](https://github.com/chatgpt20251991/Scoutingtool/pull/1) bestaat, en de gepubliceerde v0.2-commit `3f54df2fdee7ba285249c86b84846fad0eb4b63e` heeft een geslaagde CI-run. De v0.3-integratie gebeurt op `codex/omniscout-accounts`. De integrator rapporteert afzonderlijk de uiteindelijke v0.3-commit, publicatie en uitgevoerde eindtests; de v0.2-CI-uitkomst bewijst die nog niet.
+GitHub-publicatie is hervat: [PR #1](https://github.com/chatgpt20251991/Scoutingtool/pull/1) bestaat, en de gepubliceerde v0.2-commit `3f54df2fdee7ba285249c86b84846fad0eb4b63e` heeft een geslaagde CI-run. V0.3 is gepubliceerd als `54e6dfd6c05b8bb2d35629ec98300902f7af5ceb` met geslaagde CI. V0.4 bouwt verder op `codex/omniscout-recovery`. De integrator rapporteert afzonderlijk de uiteindelijke v0.4-commit, publicatie en uitgevoerde eindtests; de v0.2-CI-uitkomst bewijst die nog niet.
 
 ## Drie uitvoeringsvormen
 
@@ -47,6 +47,9 @@ De analyseregels zijn voorbeelden, geen gevalideerd voorspelmodel. Null blijft o
 | `src/auth/index.mjs` | Eerste eigenaar, login, scrypt-wachtwoordhashes, sessies, uitnodigingen, organisaties, rollen en begrensde atomaire accountopslag. |
 | `src/accounts-server.mjs` | HTTP-accountgrens, HttpOnly/SameSite-cookie, preauth- en sessie-CSRF, rolcontrole, clubselectie en routering naar de bevoegde clubopslag. |
 | `src/organizations/index.mjs` | Eigen store en queue per gevalideerd organisatie-ID, datamapvergrendeling, eenmalige legacy-overname en gesaneerde opslagstatistieken. |
+| `src/backup/crypto.mjs` | Begrensde, geauthenticeerde versleuteling van club- en serverback-ups. |
+| `src/backup/workspace.mjs` | Strikte statevalidatie, bronrechten, consistent clubback-upformaat en niet-destructieve retentiepreview. |
+| `src/backup/server.mjs`, `tools/server-backup.mjs` | Offline servermanifest, versleutelde volledige actieve opslag en herstel naar een nieuwe datamap. |
 | `src/server.mjs` | Scoutingroutes, invoervalidatie, datasetkeuze, bronrechtcontroles, auditactor, exports en expliciete statische routes; accountmodus is de standaard. |
 | `src/store.mjs` | Geordende scoutingmutaties, opslag via tijdelijk bestand en rename, gescheiden demo- en importwerkgebied. |
 | `src/import/index.mjs` | Begrensde JSON-validatie, preview, identiteiten, provenance, snapshots, correcties, catalogus en rollback. |
@@ -66,13 +69,14 @@ De analyseregels zijn voorbeelden, geen gevalideerd voorspelmodel. Null blijft o
   organizations/
     <organisatie-uuid>/
       state.json                   demo/import, besluiten, taken, audit en jobs
+      recovery/<uuid>.json         maximaal tien private vorige states na herstel
 ```
 
 De datamapvergrendeling wordt verkregen voordat persistente accountopslag wordt geopend. Eén serverproces beheert één datamap. Normaal afsluiten wacht op verwerking en geeft de vergrendeling vrij. Een achtergebleven lock wordt niet automatisch overschreven; de expliciete herstelprocedure staat in `ORGANIZATION_STORAGE.md`.
 
 Bij eerste installatie probeert de organisatiemanager het oorspronkelijke versie-1-statebestand precies eenmaal over te nemen naar de eerste club. De bron blijft ongewijzigd. Schema, snapshots en jobs worden gecontroleerd, accountgeheimen worden uitgesloten en een bestaande niet-lege bestemming wordt niet overschreven. Een mislukte migratie krijgt een zichtbare herstelstatus; een eigenaar kan de herstelroute gebruiken. Het ontvangstbewijs voorkomt dubbele overname bij herstart of herhaling.
 
-Account- en scoutingbestanden worden afzonderlijk atomisch bijgewerkt. Een mislukte accountschrijfoperatie verandert de accountstatus in het geheugen niet. Dit zijn geen databasetransacties over alle bestanden of processen. Schijfgegevens zijn niet versleuteld; lokale bestandsrechten en back-upbeveiliging blijven noodzakelijk. Er is nog geen volledig back-up-, herstel- of retentieproduct.
+Account- en scoutingbestanden worden afzonderlijk atomisch bijgewerkt. Een mislukte accountschrijfoperatie verandert de accountstatus in het geheugen niet. Dit zijn geen databasetransacties over alle bestanden of processen. Schijfgegevens zijn niet versleuteld; lokale bestandsrechten en back-upbeveiliging blijven noodzakelijk. Versleutelde club- en serverback-ups hebben afzonderlijke gecontroleerde herstelroutes; retentie is alleen een voorvertoning. Zie `WORKSPACE_RECOVERY.md`, `SERVER_BACKUP.md` en `BACKUP_ENCRYPTION.md`.
 
 Sessies bestaan uitsluitend in procesgeheugen en verlopen na maximaal 12 uur. Wachtwoorden worden met willekeurige salts en scrypt afgeleid; bewaarde sessie- en uitnodigingstokens zijn digests. Een wachtwoordwijziging roteert de sessie en trekt alle oude sessies in. Na herstart moet iedereen opnieuw aanmelden. De veiligheidskeuzes en beperkingen staan in `AUTH_SECURITY.md`.
 
@@ -87,6 +91,10 @@ Sessies bestaan uitsluitend in procesgeheugen en verlopen na maximaal 12 uur. Wa
 | GET / POST | `/api/auth/members`, `/api/auth/invites` | Eigenaar van de gekozen club leest leden of maakt een uitnodiging. |
 | PATCH / DELETE | `/api/auth/members/:userId` | Eigenaar wijzigt een rol of verwijdert een lid. |
 | POST | `/api/auth/recover-migration` | Eigenaar herhaalt een gecontroleerde legacy-overname. |
+| POST | `/api/auth/invite-preview`, `/api/auth/accept-invite` | Aangemelde account controleert en accepteert een uitnodiging. |
+| GET / DELETE | `/api/auth/invitations`, `/api/auth/invitations/:id` | Eigenaar bekijkt of trekt openstaande uitnodigingen in. |
+| POST | `/api/backup/create`, `/api/backup/preview`, `/api/backup/restore` | Eigenaar; clubgebonden versleutelde back-up en eenmalige bevestigde herstelpreview. |
+| GET | `/api/retention/preview` | Eigenaar; bewaarinventarisatie zonder writes of verwijderen. |
 | GET | `/api/workspace/stats` | Bevoegd clublid; aantallen, grenzen en opslagmodus zonder dossierinhoud. |
 | GET | `/api/import/sample` | Publiek fictief voorbeeld. |
 | POST | `/api/import/preview`, `/api/import/confirm`, `/api/import/rollback` | Scout/eigenaar van de gekozen club. |
@@ -100,6 +108,6 @@ Beschermde scoutingroutes vereisen zowel een geldige sessiecookie als een organi
 
 ## Bewust nog niet aanwezig
 
-Publieke productieauthenticatie, TLS-hosting, MFA, externe identiteitscontrole, wachtwoordherstel, een bestaande account uitnodigen voor een andere bestaande club, een gedeelde database voor meerdere serverprocessen, versleutelde back-ups, volledig herstel- en retentiebeleid, tamper-proof auditing en onafhankelijke beveiligingsbeoordeling blijven vervolgwerk.
+Publieke productieauthenticatie, TLS-hosting, MFA, externe identiteitscontrole, wachtwoordherstel, een gedeelde database voor meerdere serverprocessen, operationele externe back-upopslag en daadwerkelijk retentie-/verwijderbeleid, tamper-proof auditing en onafhankelijke beveiligingsbeoordeling blijven vervolgwerk.
 
 Ook echte providers, geautomatiseerde broninzameling, objectopslag, videotracking, LLM-gebruik, monitoring/incidentafhandeling, kostenbeheer, betalingen, beoordeelde commerciële datarechten en prospectieve scoutingvalidatie zijn niet aangesloten. De ambitie blijft wereldwijd bruikbare onderzoeksaanleidingen zichtbaar maken, inclusief lagere en amateurdivisies, met aantoonbare dekking en menselijke beoordeling. De concrete volgende bouwstappen staan in `NEXT_CODEX_TASK.md`.

@@ -1,0 +1,31 @@
+{
+  "mode": "native_browser_to_loopback_recovery_api",
+  "executedAt": "2026-09-08T05:20:25.130Z",
+  "browser": "msedge",
+  "checks": [
+    "Actual .osbackup download is authenticated encryption without plaintext club metadata; decrypts to the selected club with both demo/import research and no accounts",
+    "Wrong passphrase and malformed file fail visibly without writes; valid preview clears file/password and unconfirmed restore preserves current state",
+    "A real edit from another browser tab makes an old restore preview stale; HTTP 409 preserves the newer research state",
+    "Explicit restore replaces scouting state, retains account roles and writes a durable private previous-state copy containing the replaced research",
+    "Keyboard-submitted retention report returns actual bounded counts/dependencies and leaves the entire persisted state unchanged",
+    "Viewer account has no backup/retention controls and real HTTP rejects create, preview, restore and retention access",
+    "The downloaded Alpha backup cannot be previewed/restored into Beta; the other club remains empty",
+    "Existing account previews club/role without joining, explicitly joins Beta, and an owner invitation cannot elevate its existing scout membership",
+    "Outstanding invitations show no raw codes; owner revocation prevents preview/acceptance by an existing account"
+  ],
+  "errors": [
+    "page.waitForResponse: Timeout 30000ms exceeded while waiting for event \"response\"\n    at preview (C:\\Users\\Han23\\Documents\\Codex\\2026-09-08\\lees-start-here-codex-md-en\\work\\Scoutingtool\\tools\\browser-recovery.mjs:40:27)\n    at async file:///C:/Users/Han23/Documents/Codex/2026-09-08/lees-start-here-codex-md-en/work/Scoutingtool/tools/browser-recovery.mjs:177:14"
+  ],
+  "pageErrors": [],
+  "evidence": {
+    "retentionCounts": {
+      "ageCandidates": 0,
+      "activeDependencies": 11,
+      "pendingJobs": 0,
+      "rightsBlocks": 0,
+      "totalItems": 11,
+      "returnedItems": 2
+    }
+  },
+  "passed": false
+}

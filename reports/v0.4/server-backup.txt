@@ -1,0 +1,38 @@
+Command: node --test tests/server-backup.test.mjs
+Exit code: 0
+
+✔ full encrypted server backup restores real login and isolated scouting after fresh restart (9910.4768ms)
+✔ a running or stale server lock is never stolen and source files stay unchanged (3048.3937ms)
+✔ queued jobs and pending or inconsistent migration claims refuse backup without processing jobs (1712.0836ms)
+✔ bad passwords and tampering fail before any destination is created (2880.4189ms)
+✔ manifest path forgery, missing clubs, hashes and invitations are rejected after decryption (11164.8598ms)
+✔ current rights apply to retained rollback history during create, preview and restore (7179.3253ms)
+✔ unknown files, orphan clubs, malformed accounts and oversized accounts fail closed (1716.3926ms)
+✔ existing or unsafe restore destinations remain unchanged and mismatched confirmation cannot restore (4102.1088ms)
+✔ hardlinked account files and junction organization folders are refused (1869.4452ms)
+✔ unwritten new organizations are explicitly backed up as empty while source files stay unchanged (3990.5107ms)
+✔ concurrent full restores publish once and leave no owned staging directories (5894.3353ms)
+✔ CLI supports private-file create, inspect and confirmed restore without plaintext stdout or overwrites (8188.0597ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62449.4948
+
+Final CLI containment fix verification:
+Command: node --test --test-name-pattern='CLI supports private-file' tests/server-backup.test.mjs
+Exit code: 0
+
+✔ CLI supports private-file create, inspect and confirmed restore without plaintext stdout or overwrites (7439.0774ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8130.0519
+
