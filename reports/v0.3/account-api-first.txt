@@ -1,0 +1,32 @@
+✔ default app gates all club data and every setup mutation uses same-origin preauth CSRF (489.3506ms)
+✖ two clubs isolate matching player IDs, import hashes, job IDs, research IDs, exports and roles (764.2077ms)
+✔ password rotation and logout revoke old cookies without affecting another account (1736.8656ms)
+✔ first setup preserves legacy bytes and restart requires login while retaining club state (792.997ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 3
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3971.9308
+
+✖ failing tests:
+
+test at tests\account-api.test.mjs:58:1
+✖ two clubs isolate matching player IDs, import hashes, job IDs, research IDs, exports and roles (764.2077ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  403 !== 404
+  
+      at TestContext.<anonymous> (file:///C:/Users/Han23/Documents/Codex/2026-09-08/lees-start-here-codex-md-en/work/Scoutingtool/tests/account-api.test.mjs:66:11)
+      at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+      at async Test.run (node:internal/test_runner/test:1208:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:831:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 403,
+    expected: 404,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

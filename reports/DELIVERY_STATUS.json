@@ -1,0 +1,33 @@
+{
+  "version": "0.1.0",
+  "date": "2026-09-08",
+  "build_location": "local_artifact_environment",
+  "target_repository": "chatgpt20251991/Scoutingtool",
+  "repository_visibility_at_inspection": "public",
+  "github_write": {
+    "attempt": "create_file AGENTS.md",
+    "status": 403,
+    "message": "Resource not accessible by integration",
+    "committed": false
+  },
+  "last_installed_repository_search": {
+    "query": "Scoutingtool",
+    "matches": 0
+  },
+  "codex_task_started": false,
+  "git_push_performed": false,
+  "remote_ci_executed": false,
+  "cloud_deployed": false,
+  "live_data_sources": 0,
+  "synthetic_players": 12,
+  "synthetic_competitions": 8,
+  "tests": {
+    "node_passed": 55,
+    "node_failed": 0,
+    "browser_content_only_passed": 13,
+    "browser_http_end_to_end_completed": false
+  },
+  "production_ready": false,
+  "llm_api_used": false,
+  "paid_api_calls": 0
+}

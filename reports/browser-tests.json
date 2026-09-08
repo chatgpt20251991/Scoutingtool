@@ -1,0 +1,62 @@
+{
+  "mode": "content_only",
+  "limitations": "Browser navigation to HTTP and file URLs is blocked by environment policy. Content-only tests verify the inline interface in memory. HTTP API and disk persistence were tested separately in Node, not end-to-end in this browser.",
+  "checks": [
+    {
+      "test": "Desktop renders all 12 labelled fixtures without page overflow",
+      "status": "passed"
+    },
+    {
+      "test": "Search and unknown-value presentation",
+      "status": "passed"
+    },
+    {
+      "test": "Dossier shows counterevidence, provenance and missing information",
+      "status": "passed"
+    },
+    {
+      "test": "Research question creates an internal task in temporary memory",
+      "status": "passed"
+    },
+    {
+      "test": "Research result is mandatory and completing it updates the board",
+      "status": "passed"
+    },
+    {
+      "test": "Shortlist survives navigation within the current in-memory session",
+      "status": "passed"
+    },
+    {
+      "test": "Evidence comparison and native dialog keyboard close",
+      "status": "passed"
+    },
+    {
+      "test": "Structured club brief saves and applies role and age filters",
+      "status": "passed"
+    },
+    {
+      "test": "Coverage register and disconnected-competition empty state",
+      "status": "passed"
+    },
+    {
+      "test": "Decision and task changes are visible in the local audit log",
+      "status": "passed"
+    },
+    {
+      "test": "390px mobile filtering and dossier are usable without document overflow",
+      "status": "passed"
+    },
+    {
+      "test": "Self-contained HTML renders from memory without external assets or network requests",
+      "status": "passed"
+    },
+    {
+      "test": "No uncaught JavaScript errors in tested browser workflows",
+      "status": "passed"
+    }
+  ],
+  "passed": 13,
+  "browserErrors": [],
+  "browser": "System Chromium via Python Playwright",
+  "note": "Fixture UI tests; not a scouting effectiveness evaluation."
+}

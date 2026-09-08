@@ -1,0 +1,13 @@
+{
+  "mode": "native_browser_to_loopback_backend",
+  "executedAt": "2026-09-08T04:26:15.232Z",
+  "checks": [
+    "Native Edge/Chromium navigation loads 12 demo profiles through the running Node backend",
+    "Malformed JSON, unsupported schema and oversize upload show errors and create no snapshots",
+    "Preview shows counts/rights/seasons without writes; confirmation displays actual succeeded backend job"
+  ],
+  "errors": [
+    "expect(locator).toHaveCount(expected) failed\n\nLocator:  locator('.task-card')\nExpected: 1\nReceived: 0\nTimeout:  5000ms\n\nCall log:\n  - Expect \"to.have.count\" with timeout 5000ms\n  - waiting for locator('.task-card')\n    14 × locator resolved to 0 elements\n       - unexpected value \"0\"\n"
+  ],
+  "passed": false
+}

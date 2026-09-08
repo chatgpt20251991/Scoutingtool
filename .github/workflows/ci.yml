@@ -1,0 +1,32 @@
+name: Verify research prototype
+on: [push, pull_request]
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts
+      - run: npm run verify
+      - run: npm run test:cli
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m unittest discover -s tests -v
+        working-directory: reference/python-prototype
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+      - run: npm run test:accounts
+      - run: npm run test:offline
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: omniscout-browser-evidence
+          path: |
+            reports/current/
+            reports/v0.3/

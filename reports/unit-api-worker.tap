@@ -1,0 +1,340 @@
+TAP version 13
+# Subtest: fixture catalog is valid and all football records are explicitly synthetic
+ok 1 - fixture catalog is valid and all football records are explicitly synthetic
+  ---
+  duration_ms: 2.657368
+  type: 'test'
+  ...
+# Subtest: null, zero, invalid and negative minutes never produce a per-90 value
+ok 2 - null, zero, invalid and negative minutes never produce a per-90 value
+  ---
+  duration_ms: 0.183577
+  type: 'test'
+  ...
+# Subtest: an observed zero remains a valid zero
+ok 3 - an observed zero remains a valid zero
+  ---
+  duration_ms: 0.07921
+  type: 'test'
+  ...
+# Subtest: percentages reject inconsistent numerator and denominator
+ok 4 - percentages reject inconsistent numerator and denominator
+  ---
+  duration_ms: 0.084678
+  type: 'test'
+  ...
+# Subtest: age is calculated at the cutoff, including birthdays
+ok 5 - age is calculated at the cutoff, including birthdays
+  ---
+  duration_ms: 0.143396
+  type: 'test'
+  ...
+# Subtest: source use is blocked if rights expire, begin later or omit the specific purpose
+ok 6 - source use is blocked if rights expire, begin later or omit the specific purpose
+  ---
+  duration_ms: 0.295315
+  type: 'test'
+  ...
+# Subtest: future records and unavailable publication dates do not leak into a cutoff
+ok 7 - future records and unavailable publication dates do not leak into a cutoff
+  ---
+  duration_ms: 0.211049
+  type: 'test'
+  ...
+# Subtest: provider identity never merges players based on names
+ok 8 - provider identity never merges players based on names
+  ---
+  duration_ms: 0.246351
+  type: 'test'
+  ...
+# Subtest: source freshness distinguishes old, current and missing timestamps
+ok 9 - source freshness distinguishes old, current and missing timestamps
+  ---
+  duration_ms: 0.273101
+  type: 'test'
+  ...
+# Subtest: unknown statistics remain in the exploration queue
+ok 10 - unknown statistics remain in the exploration queue
+  ---
+  duration_ms: 0.755559
+  type: 'test'
+  ...
+# Subtest: short appearances are not labelled as well-documented despite high per-90 rates
+ok 11 - short appearances are not labelled as well-documented despite high per-90 rates
+  ---
+  duration_ms: 0.230468
+  type: 'test'
+  ...
+# Subtest: keeper and defender discovery does not depend on goals or assists
+ok 12 - keeper and defender discovery does not depend on goals or assists
+  ---
+  duration_ms: 0.284349
+  type: 'test'
+  ...
+# Subtest: feed coverage version changes cannot produce a fictional performance trend
+ok 13 - feed coverage version changes cannot produce a fictional performance trend
+  ---
+  duration_ms: 0.08
+  type: 'test'
+  ...
+# Subtest: incompatible definitions and unequal match windows cannot produce a trend
+ok 14 - incompatible definitions and unequal match windows cannot produce a trend
+  ---
+  duration_ms: 0.148324
+  type: 'test'
+  ...
+# Subtest: comparable windows return their observed minutes difference, not a growth forecast
+ok 15 - comparable windows return their observed minutes difference, not a growth forecast
+  ---
+  duration_ms: 0.064798
+  type: 'test'
+  ...
+# Subtest: cutoff filtering removes later stats without treating them as observed zeros
+ok 16 - cutoff filtering removes later stats without treating them as observed zeros
+  ---
+  duration_ms: 0.302937
+  type: 'test'
+  ...
+# Subtest: expired sources block the entire dossier
+ok 17 - expired sources block the entire dossier
+  ---
+  duration_ms: 0.27153
+  type: 'test'
+  ...
+# Subtest: unknown ages and minors are excluded from this adult prototype
+ok 18 - unknown ages and minors are excluded from this adult prototype
+  ---
+  duration_ms: 0.262015
+  type: 'test'
+  ...
+# Subtest: stale feeds require exploration rather than retaining a current evidence badge
+ok 19 - stale feeds require exploration rather than retaining a current evidence badge
+  ---
+  duration_ms: 0.292671
+  type: 'test'
+  ...
+# Subtest: counterevidence is retained alongside positive evidence
+ok 20 - counterevidence is retained alongside positive evidence
+  ---
+  duration_ms: 0.127102
+  type: 'test'
+  ...
+# Subtest: untrusted text cannot change deterministic rules
+ok 21 - untrusted text cannot change deterministic rules
+  ---
+  duration_ms: 0.536419
+  type: 'test'
+  ...
+# Subtest: search works by role, age, country, region and coverage route
+ok 22 - search works by role, age, country, region and coverage route
+  ---
+  duration_ms: 9.139713
+  type: 'test'
+  ...
+# Subtest: new means new for the local club; decisions do not alter measured quality
+ok 23 - new means new for the local club; decisions do not alter measured quality
+  ---
+  duration_ms: 0.774828
+  type: 'test'
+  ...
+# Subtest: last scout decision determines shortlist membership
+ok 24 - last scout decision determines shortlist membership
+  ---
+  duration_ms: 0.432282
+  type: 'test'
+  ...
+# Subtest: coverage is per data type and lack of connection remains explicit
+ok 25 - coverage is per data type and lack of connection remains explicit
+  ---
+  duration_ms: 0.0926
+  type: 'test'
+  ...
+# Subtest: budget rejections are not encoded as negative talent labels
+ok 26 - budget rejections are not encoded as negative talent labels
+  ---
+  duration_ms: 0.500134
+  type: 'test'
+  ...
+# Subtest: CSV neutralizes formula injection, quotes and preserves missing values
+ok 27 - CSV neutralizes formula injection, quotes and preserves missing values
+  ---
+  duration_ms: 0.200142
+  type: 'test'
+  ...
+# Subtest: exports include provenance, cutoff and synthetic data notice
+ok 28 - exports include provenance, cutoff and synthetic data notice
+  ---
+  duration_ms: 0.657061
+  type: 'test'
+  ...
+# Subtest: snapshot validation rejects duplicate provider IDs and missing rights
+ok 29 - snapshot validation rejects duplicate provider IDs and missing rights
+  ---
+  duration_ms: 0.726375
+  type: 'test'
+  ...
+# Subtest: snapshot validation rejects negative measures and missing coverage dimensions
+ok 30 - snapshot validation rejects negative measures and missing coverage dimensions
+  ---
+  duration_ms: 0.45738
+  type: 'test'
+  ...
+# Subtest: health explicitly states synthetic demo and zero live sources
+ok 31 - health explicitly states synthetic demo and zero live sources
+  ---
+  duration_ms: 25.660729
+  type: 'test'
+  ...
+# Subtest: HTTP serves only known public files, not the repository
+ok 32 - HTTP serves only known public files, not the repository
+  ---
+  duration_ms: 10.729932
+  type: 'test'
+  ...
+# Subtest: security headers block framing and arbitrary script origins
+ok 33 - security headers block framing and arbitrary script origins
+  ---
+  duration_ms: 2.891
+  type: 'test'
+  ...
+# Subtest: DNS rebinding-style hostnames are denied
+ok 34 - DNS rebinding-style hostnames are denied
+  ---
+  duration_ms: 5.5629
+  type: 'test'
+  ...
+# Subtest: writes require a valid session token
+ok 35 - writes require a valid session token
+  ---
+  duration_ms: 4.621139
+  type: 'test'
+  ...
+# Subtest: cross-origin and cross-site requests are denied
+ok 36 - cross-origin and cross-site requests are denied
+  ---
+  duration_ms: 2.160268
+  type: 'test'
+  ...
+# Subtest: Unicode session-token input does not trigger a server exception
+ok 37 - Unicode session-token input does not trigger a server exception
+  ---
+  duration_ms: 1.384167
+  type: 'test'
+  ...
+# Subtest: API search filters synthetic players
+ok 38 - API search filters synthetic players
+  ---
+  duration_ms: 3.389903
+  type: 'test'
+  ...
+# Subtest: unknown player IDs cannot be saved
+ok 39 - unknown player IDs cannot be saved
+  ---
+  duration_ms: 2.628414
+  type: 'test'
+  ...
+# Subtest: invalid actions and unsupported request content are rejected
+ok 40 - invalid actions and unsupported request content are rejected
+  ---
+  duration_ms: 4.30967
+  type: 'test'
+  ...
+# Subtest: archive decisions require a note and preserve a budget reason
+ok 41 - archive decisions require a note and preserve a budget reason
+  ---
+  duration_ms: 3.755003
+  type: 'test'
+  ...
+# Subtest: shortlist decisions persist and are recorded in audit events
+ok 42 - shortlist decisions persist and are recorded in audit events
+  ---
+  duration_ms: 2.616285
+  type: 'test'
+  ...
+# Subtest: retrying the same research request does not create a duplicate
+ok 43 - retrying the same research request does not create a duplicate
+  ---
+  duration_ms: 3.769535
+  type: 'test'
+  ...
+# Subtest: an idempotency key cannot silently overwrite another task
+ok 44 - an idempotency key cannot silently overwrite another task
+  ---
+  duration_ms: 2.923529
+  type: 'test'
+  ...
+# Subtest: completing a task requires a written observation
+ok 45 - completing a task requires a written observation
+  ---
+  duration_ms: 3.647471
+  type: 'test'
+  ...
+# Subtest: brief validation rejects minors and invalid age ranges
+ok 46 - brief validation rejects minors and invalid age ranges
+  ---
+  duration_ms: 2.7588
+  type: 'test'
+  ...
+# Subtest: a valid structured brief is saved without pretending to parse its text with AI
+ok 47 - a valid structured brief is saved without pretending to parse its text with AI
+  ---
+  duration_ms: 1.333491
+  type: 'test'
+  ...
+# Subtest: oversized requests are rejected
+ok 48 - oversized requests are rejected
+  ---
+  duration_ms: 2.847674
+  type: 'test'
+  ...
+# Subtest: shortlist CSV can be downloaded with a synthetic-data label
+ok 49 - shortlist CSV can be downloaded with a synthetic-data label
+  ---
+  duration_ms: 1.833836
+  type: 'test'
+  ...
+# Subtest: file persistence survives reopening and serializes concurrent writes
+ok 50 - file persistence survives reopening and serializes concurrent writes
+  ---
+  duration_ms: 10.570601
+  type: 'test'
+  ...
+# Subtest: edge health never claims to be a live ingestion worker
+ok 51 - edge health never claims to be a live ingestion worker
+  ---
+  duration_ms: 25.152344
+  type: 'test'
+  ...
+# Subtest: edge demo refuses writes until production state and auth exist
+ok 52 - edge demo refuses writes until production state and auth exist
+  ---
+  duration_ms: 0.554246
+  type: 'test'
+  ...
+# Subtest: edge filters the same fixture engine as the local version
+ok 53 - edge filters the same fixture engine as the local version
+  ---
+  duration_ms: 8.716205
+  type: 'test'
+  ...
+# Subtest: edge missing asset bindings fail visibly
+ok 54 - edge missing asset bindings fail visibly
+  ---
+  duration_ms: 0.313683
+  type: 'test'
+  ...
+# Subtest: edge asset responses have security headers
+ok 55 - edge asset responses have security headers
+  ---
+  duration_ms: 0.773997
+  type: 'test'
+  ...
+1..55
+# tests 55
+# suites 0
+# pass 55
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 184.861486

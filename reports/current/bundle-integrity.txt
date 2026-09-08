@@ -1,0 +1,2 @@
+OK: 101 handoff files match the manifest.
+This verifies package integrity, not remote transfer or product correctness.

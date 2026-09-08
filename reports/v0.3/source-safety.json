@@ -1,0 +1,6 @@
+{
+  "candidate_files": 183,
+  "credential_pattern_files": [],
+  "sensitive_paths": [],
+  "scope": "Pattern and path scan of prospective tracked files; synthetic credentials in tests are deliberate fixtures, not real accounts."
+}

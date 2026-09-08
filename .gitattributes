@@ -1,0 +1,2 @@
+# Keep diagnostic whitespace in captured raw terminal logs; lint source normally.
+reports/**/*.txt -whitespace

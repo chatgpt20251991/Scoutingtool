@@ -1,0 +1,91 @@
+{
+  "status": "passed",
+  "checks": 21,
+  "harness": "DOM injection + real HTTP/SQLite via Python fetch bridge; NOT native-navigation E2E",
+  "results": [
+    {
+      "name": "desktop_initial_render",
+      "status": "passed"
+    },
+    {
+      "name": "demo_warning_visible",
+      "status": "passed"
+    },
+    {
+      "name": "desktop_no_horizontal_page_overflow",
+      "status": "passed"
+    },
+    {
+      "name": "role_filter",
+      "status": "passed"
+    },
+    {
+      "name": "exploration_separate",
+      "status": "passed"
+    },
+    {
+      "name": "dossier_has_counterevidence",
+      "status": "passed"
+    },
+    {
+      "name": "dossier_has_source",
+      "status": "passed"
+    },
+    {
+      "name": "research_task_persisted_to_real_sqlite",
+      "status": "passed"
+    },
+    {
+      "name": "task_repeated_click_idempotent",
+      "status": "passed"
+    },
+    {
+      "name": "budget_decision_persisted",
+      "status": "passed"
+    },
+    {
+      "name": "notes_render_as_text_not_html",
+      "status": "passed"
+    },
+    {
+      "name": "task_completion_persisted",
+      "status": "passed"
+    },
+    {
+      "name": "coverage_result_only_visible",
+      "status": "passed"
+    },
+    {
+      "name": "club_brief_persisted",
+      "status": "passed"
+    },
+    {
+      "name": "import_queued",
+      "status": "passed"
+    },
+    {
+      "name": "worker_processed_import",
+      "status": "passed"
+    },
+    {
+      "name": "real_data_never_faked_by_demo",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_390_no_horizontal_page_overflow",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_dossier_fits",
+      "status": "passed"
+    },
+    {
+      "name": "mobile_360_no_horizontal_page_overflow",
+      "status": "passed"
+    },
+    {
+      "name": "no_uncaught_javascript_errors",
+      "status": "passed"
+    }
+  ]
+}

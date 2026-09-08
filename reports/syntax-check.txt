@@ -1,0 +1,15 @@
+
+> omniscout-research-radar@0.1.0 check
+> node tools/check.mjs
+
+Syntax OK: src/engine.mjs
+Syntax OK: src/fixtures.mjs
+Syntax OK: src/server.mjs
+Syntax OK: src/store.mjs
+Syntax OK: public/app.js
+Syntax OK: worker/index.mjs
+Syntax OK: tests/engine.test.mjs
+Syntax OK: tests/server.test.mjs
+Syntax OK: tests/worker.test.mjs
+Syntax OK: tools/build-preview.mjs
+Syntax OK: tools/check.mjs

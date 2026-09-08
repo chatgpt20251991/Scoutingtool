@@ -1,0 +1,20 @@
+✔ default app gates all club data and every setup mutation uses same-origin preauth CSRF (605.7335ms)
+✔ two clubs isolate matching player IDs, import hashes, job IDs, research IDs, exports and roles (1135.3942ms)
+✔ password rotation and logout revoke old cookies without affecting another account (2680.2623ms)
+✔ first setup preserves legacy bytes and restart requires login while retaining club state (1050.3982ms)
+✔ review: secure default gates every workspace API and exports despite forged organization context (157.5365ms)
+✔ review: preauth CSRF is cookie-bound and expires, and issued authenticated CSRF works for mutations (495.161ms)
+✔ review: organization header controls all data and a live demoted/revoked session loses write/read access (1137.0399ms)
+✔ review: last owner protected, old owner role is rechecked and invitations die with issuer authority (1745.321ms)
+✔ review: password rotation revokes every old cookie and logout cannot reuse old data/API access (2939.588ms)
+✔ review: expired sessions, untrusted host/origin and duplicate session cookies fail closed (671.5262ms)
+✔ review: restarting persistent app invalidates session while retaining isolated state and exclusive lock (1384.629ms)
+✔ review: failed setup migration remains bound to the first organization across repair and restart (1093.6589ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 9859.0456

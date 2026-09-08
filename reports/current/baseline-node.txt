@@ -1,0 +1,91 @@
+
+> omniscout-research-radar@0.1.0 verify
+> npm run check && npm test && npm run preview:build
+
+
+> omniscout-research-radar@0.1.0 check
+> node tools/check.mjs
+
+Syntax OK: src/engine.mjs
+Syntax OK: src/fixtures.mjs
+Syntax OK: src/server.mjs
+Syntax OK: src/store.mjs
+Syntax OK: public/app.js
+Syntax OK: worker/index.mjs
+Syntax OK: tests/engine.test.mjs
+Syntax OK: tests/server.test.mjs
+Syntax OK: tests/worker.test.mjs
+Syntax OK: tools/build-preview.mjs
+Syntax OK: tools/check.mjs
+
+> omniscout-research-radar@0.1.0 test
+> node --test tests/*.test.mjs
+
+✔ fixture catalog is valid and all football records are explicitly synthetic (5.4945ms)
+✔ null, zero, invalid and negative minutes never produce a per-90 value (2.0738ms)
+✔ an observed zero remains a valid zero (0.3515ms)
+✔ percentages reject inconsistent numerator and denominator (0.3007ms)
+✔ age is calculated at the cutoff, including birthdays (0.3247ms)
+✔ source use is blocked if rights expire, begin later or omit the specific purpose (0.4126ms)
+✔ future records and unavailable publication dates do not leak into a cutoff (0.3091ms)
+✔ provider identity never merges players based on names (0.7379ms)
+✔ source freshness distinguishes old, current and missing timestamps (0.5974ms)
+✔ unknown statistics remain in the exploration queue (2.78ms)
+✔ short appearances are not labelled as well-documented despite high per-90 rates (0.6907ms)
+✔ keeper and defender discovery does not depend on goals or assists (0.683ms)
+✔ feed coverage version changes cannot produce a fictional performance trend (0.257ms)
+✔ incompatible definitions and unequal match windows cannot produce a trend (0.4546ms)
+✔ comparable windows return their observed minutes difference, not a growth forecast (0.187ms)
+✔ cutoff filtering removes later stats without treating them as observed zeros (1.1443ms)
+✔ expired sources block the entire dossier (0.808ms)
+✔ unknown ages and minors are excluded from this adult prototype (0.8017ms)
+✔ stale feeds require exploration rather than retaining a current evidence badge (1.0043ms)
+✔ counterevidence is retained alongside positive evidence (0.3714ms)
+✔ untrusted text cannot change deterministic rules (1.5755ms)
+✔ search works by role, age, country, region and coverage route (33.5423ms)
+✔ new means new for the local club; decisions do not alter measured quality (2.7086ms)
+✔ last scout decision determines shortlist membership (0.9424ms)
+✔ coverage is per data type and lack of connection remains explicit (0.2956ms)
+✔ budget rejections are not encoded as negative talent labels (1.902ms)
+✔ CSV neutralizes formula injection, quotes and preserves missing values (0.3714ms)
+✔ exports include provenance, cutoff and synthetic data notice (2.1083ms)
+✔ snapshot validation rejects duplicate provider IDs and missing rights (2.68ms)
+✔ snapshot validation rejects negative measures and missing coverage dimensions (0.8564ms)
+✔ health explicitly states synthetic demo and zero live sources (68.4239ms)
+✔ HTTP serves only known public files, not the repository (20.779ms)
+✔ security headers block framing and arbitrary script origins (4.8985ms)
+✔ DNS rebinding-style hostnames are denied (12.2135ms)
+✔ writes require a valid session token (9.461ms)
+✔ cross-origin and cross-site requests are denied (3.96ms)
+✔ Unicode session-token input does not trigger a server exception (2.8908ms)
+✔ API search filters synthetic players (5.2024ms)
+✔ unknown player IDs cannot be saved (6.1542ms)
+✔ invalid actions and unsupported request content are rejected (5.8939ms)
+✔ archive decisions require a note and preserve a budget reason (8.5301ms)
+✔ shortlist decisions persist and are recorded in audit events (5.3434ms)
+✔ retrying the same research request does not create a duplicate (5.8381ms)
+✔ an idempotency key cannot silently overwrite another task (2.459ms)
+✔ completing a task requires a written observation (8.2149ms)
+✔ brief validation rejects minors and invalid age ranges (6.2457ms)
+✔ a valid structured brief is saved without pretending to parse its text with AI (3.6354ms)
+✔ oversized requests are rejected (5.2653ms)
+✔ shortlist CSV can be downloaded with a synthetic-data label (5.1305ms)
+✔ file persistence survives reopening and serializes concurrent writes (56.2693ms)
+✔ edge health never claims to be a live ingestion worker (65.2643ms)
+✔ edge demo refuses writes until production state and auth exist (1.1259ms)
+✔ edge filters the same fixture engine as the local version (34.9662ms)
+✔ edge missing asset bindings fail visibly (1.0069ms)
+✔ edge asset responses have security headers (1.2617ms)
+ℹ tests 55
+ℹ suites 0
+ℹ pass 55
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 584.9826
+
+> omniscout-research-radar@0.1.0 preview:build
+> node tools/build-preview.mjs
+
+Gebouwd: OmniScout-preview.html (offline demo) en dist/ (edge-demo assets). Geen publicatie uitgevoerd.

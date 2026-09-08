@@ -1,0 +1,21 @@
+{
+  "date": "2026-09-08",
+  "checks": [
+    {
+      "check": "node-verify",
+      "command": "npm run verify",
+      "return_code": 0,
+      "log": "handoff/checks/node-verify.txt"
+    },
+    {
+      "check": "python-tests",
+      "command": "python -m unittest discover -s tests -v",
+      "return_code": 0,
+      "log": "handoff/checks/python-tests.txt"
+    }
+  ],
+  "browser_tests_rerun": false,
+  "github_transferred": false,
+  "codex_started": false,
+  "workers_started": false
+}

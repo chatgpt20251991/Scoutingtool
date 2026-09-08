@@ -1,0 +1,18 @@
+{
+  "mode": "native_browser_to_loopback_backend",
+  "executedAt": "2026-09-08T04:39:04.474Z",
+  "checks": [
+    "Native Edge/Chromium navigation loads 12 demo profiles through the running Node backend",
+    "Malformed JSON, unsupported schema and oversize upload show errors and create no snapshots",
+    "Preview shows counts/rights/seasons without writes; confirmation displays actual succeeded backend job",
+    "Imported dossier renders hostile-looking text safely; shortlist and research completion persist via API",
+    "Comparison and actual browser CSV download use the selected imported profiles",
+    "Reload restores import dataset; demo has separate decisions; imported content is absent from localStorage",
+    "Repeated confirmation is idempotent: one persisted job and snapshot",
+    "Mobile import radar fits 390px and unknown-minute dossier remains usable",
+    "Real server restart restores disk-backed research; UI rollback removes catalog records and retains immutable history",
+    "No uncaught browser page errors during the complete HTTP workflow"
+  ],
+  "errors": [],
+  "passed": true
+}

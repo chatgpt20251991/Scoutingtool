@@ -1,0 +1,12 @@
+✔ default app gates all club data and every setup mutation uses same-origin preauth CSRF (483.3709ms)
+✔ two clubs isolate matching player IDs, import hashes, job IDs, research IDs, exports and roles (895.471ms)
+✔ password rotation and logout revoke old cookies without affecting another account (1826.5152ms)
+✔ first setup preserves legacy bytes and restart requires login while retaining club state (1081.587ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4499.0592
