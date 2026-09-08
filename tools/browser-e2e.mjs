@@ -19,7 +19,7 @@ const checks = [], errors = [], temp = await mkdtemp(join(tmpdir(), 'omniscout-b
 let app, browser, context, base;
 const passed = name => { checks.push(name); console.log('PASS:', name); };
 async function start() {
-  app = await createApp({ statePath: join(temp, 'state.json') });
+  app = await createApp({ authRequired: false, statePath: join(temp, 'state.json') });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   base = `http://127.0.0.1:${app.server.address().port}`;
 }

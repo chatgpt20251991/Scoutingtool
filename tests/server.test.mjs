@@ -8,7 +8,7 @@ import { createApp } from '../src/server.mjs';
 import { createStore } from '../src/store.mjs';
 let server, base, csrf;
 test.before(async () => {
-  ({ server } = await createApp());
+  ({ server } = await createApp({ authRequired: false }));
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   base = `http://127.0.0.1:${server.address().port}`;
   csrf = (await (await fetch(`${base}/api/session`)).json()).csrf;

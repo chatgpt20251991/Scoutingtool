@@ -1,0 +1,44 @@
+{
+  "executedAt": "2026-09-08T04:41:58.2626949Z",
+  "node": {
+    "log": "node-verify.txt",
+    "passed": 158,
+    "failed": 0,
+    "skipped": 0,
+    "command": "npm run verify"
+  },
+  "python": {
+    "workingDirectory": "reference/python-prototype",
+    "passed": 62,
+    "log": "python-tests.txt",
+    "command": "python -m unittest discover -s tests -v"
+  },
+  "browser": {
+    "pageErrors": 0,
+    "engine": "Microsoft Edge",
+    "offlineEdge": 10,
+    "legacy": 10,
+    "accounts": 12,
+    "logs": [
+      "browser-accounts.txt",
+      "browser-legacy.txt",
+      "browser-offline.txt"
+    ]
+  },
+  "cli": {
+    "passed": 1,
+    "log": "cli-startup.txt",
+    "command": "npm run test:cli"
+  },
+  "sourcePreservation": {
+    "files": 45,
+    "log": "source-preservation.json",
+    "unchanged": true
+  },
+  "initialFailuresPreserved": [
+    "node-verify-initial-failure.txt",
+    "browser-legacy-initial-failure.json",
+    "account-api-first.txt"
+  ],
+  "note": "The Windows contention test deliberately allows bounded write rejection while asserting exact disk/memory commit consistency and successful recovery. All test assertions passed."
+}

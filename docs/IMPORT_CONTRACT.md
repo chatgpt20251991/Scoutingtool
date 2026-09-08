@@ -2,6 +2,8 @@
 
 Integrator-owned contract for workers A/B/C/D. Node remains the main app; Python is an unchanged reference.
 
+**V0.3 authorization:** the default server also requires an authenticated HttpOnly session and `X-Omniscout-Organization` on every protected read/write, export and job request. Membership is checked at request time; viewer cannot mutate and owner manages members. All below-mentioned stores and queues are scoped to the authorized club, with separate demo/import workspaces inside it. Public synthetic sample download is the explicit exception. See `ACCOUNTS_CONTRACT.md`. The original v0.2 worker boundaries below describe the completed import work package.
+
 ## Wire format
 
 JSON envelope: `{schemaVersion:1, snapshotId, correctionOf:null|string, asOf, source, competitions:[], players:[]}`. Source, competitions and players use the existing Node catalog camelCase fields, with strict validation. Additional required source fields: `rightsAttested:true`, `allowedUses` including ingest/store/display/analysis; explicit `expiresAt`, `validFrom`, `rightsNote`, and `status` synthetic or approved (importer declaration, not independently verified). Required player fields include `provider`, `providerId`, `identityStatus` (provider_id or verified; needs_review is a blocking conflict), `sourceId`, `competitionId`, `dob`, `role`, `synthetic`, four timestamps and `stats`. Stats include `snapshotId`, `definition` (registered `omniscout-counts-v1`), minutes and matches (nullable), four timestamps and known nullable counting metrics. Snapshot and observation IDs are immutable; a correction uses a new snapshotId and correctionOf. IDs are bounded ASCII identifiers. No names as identity keys.

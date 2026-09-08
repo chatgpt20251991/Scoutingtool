@@ -8,6 +8,7 @@ export default {
     const json = (data, status = 200) => new Response(JSON.stringify(data), { status, headers });
     if (!['GET', 'HEAD'].includes(request.method)) return json({ error: 'Deze edge-demo is alleen-lezen. Productie-authenticatie en database moeten eerst worden gebouwd.' }, 501);
     if (url.pathname === '/api/health') return json({ ok: true, mode: 'synthetic_demo', liveSources: 0, persistence: 'none', productionReady: false });
+    if (url.pathname === '/api/session') return json({ mode: 'synthetic_demo', readOnly: true, supportsImport: false, authenticated: false });
     if (url.pathname === '/api/catalog') return json(CATALOG);
     if (url.pathname === '/api/players') {
       const f = Object.fromEntries(url.searchParams);

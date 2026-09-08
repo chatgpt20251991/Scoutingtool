@@ -20,7 +20,7 @@ def passed(name):
     checks.append({'test': name, 'status': 'passed'})
     print('PASS:', name, flush=True)
 with tempfile.TemporaryDirectory(prefix='omniscout-browser-') as td:
-    server_code = f"import {{createApp}} from './src/server.mjs'; const {{server}}=await createApp({{statePath:{json.dumps(str(Path(td)/'state.json'))}}});server.listen(0,'127.0.0.1',()=>console.log(server.address().port));"
+    server_code = f"import {{createApp}} from './src/server.mjs'; const {{server}}=await createApp({{authRequired:false,statePath:{json.dumps(str(Path(td)/'state.json'))}}});server.listen(0,'127.0.0.1',()=>console.log(server.address().port));"
     proc = subprocess.Popen(['node', '--input-type=module', '-e', server_code], cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     try:
         port = proc.stdout.readline().strip()

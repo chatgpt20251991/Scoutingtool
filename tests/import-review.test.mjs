@@ -17,7 +17,7 @@ function revision(payload, id = 'review-revision') {
   return next;
 }
 async function start(t, now = () => NOW) {
-  const app = await createApp({ now });
+  const app = await createApp({ authRequired: false, now });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${app.server.address().port}`;
   const { csrf } = await (await fetch(base + '/api/session')).json();

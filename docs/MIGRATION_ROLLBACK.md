@@ -4,13 +4,13 @@ De Node-app is het hoofdproject. De Python/SQLite-app onder `reference/python-pr
 
 ## Bestaande installatie bijwerken
 
-1. Stop het bestaande Node-proces; gebruik één proces per lokaal statebestand.
-2. Maak buiten Git een kopie van `.local/state.json` als dit bestaat.
+1. Stop het bestaande Node-proces; gebruik één proces per lokale gegevensmap.
+2. Maak buiten Git een kopie van de volledige `.local/`-map als deze bestaat, inclusief accounts en alle organisaties.
 3. Werk de applicatie bij en voer `npm run verify` uit. Start met `npm start` op loopback.
-4. Bestaande versie-1-demobesluiten, opdrachten en clubvraag blijven op hun bestaande plek. De queue voegt `imports` en `importJobs` toe; eigen scoutingacties komen onder `importWorkspace`. Er is geen automatische conversie van Python/SQLite of van de oude Python-JSON-import.
+4. Maak bij de eerste v0.3-start de eerste account en club aan. Bestaande versie-1-demobesluiten, opdrachten, clubvraag en imports uit `.local/state.json` worden éénmaal naar die club overgenomen. Het oorspronkelijke bestand blijft staan; een duurzame claim voorkomt toewijzing aan een andere club. Lees `ORGANIZATION_STORAGE.md` voor fout- en crashherstel. Er is geen automatische conversie van Python/SQLite of van de oude Python-JSON-import.
 5. Kies Bronimport, gebruik eerst `samples/import-demo.json`, controleer de preview en bevestig expliciet. Selecteer daarna Lokale import. Standalone HTML en de Cloudflare-demo ondersteunen deze import niet.
 
-Imports worden niet naar browseropslag gekopieerd. Alleen de datasetvoorkeur wordt daar opgeslagen. De lokale JSON-opslag is niet versleuteld en geen productieauthenticatie of tenantisolatie. Gebruik synthetische, niet-vertrouwelijke testgegevens totdat de afzonderlijke productievoorwaarden zijn gerealiseerd.
+Imports worden niet naar browseropslag gekopieerd. Alleen dataset- en clubvoorkeuren worden daar opgeslagen. V0.3 controleert lokale accounts en clublidmaatschap en scheidt clubopslag. De JSON-opslag is niet versleuteld en dit is geen publieke productieomgeving. Gebruik synthetische, niet-vertrouwelijke testgegevens totdat de afzonderlijke productievoorwaarden zijn gerealiseerd.
 
 ## Een import terugdraaien
 
@@ -20,7 +20,7 @@ Een teruggedraaide snapshot blijft teruggedraaid bij een identieke herimport. Ge
 
 ## Opslagfout of onderbroken proces
 
-Een wijziging wordt eerst naar een tijdelijk bestand geschreven en geflusht en vervolgens atomair vervangen. Bij een schrijffout blijft de vorige in-memory status behouden en wordt het tijdelijke bestand opgeruimd. Een gesimuleerde vervangingsfout en herstel zijn daadwerkelijk getest. Er is geen garantie tegen alle vormen van diskcorruptie, stroomuitval of twee gelijktijdige serverprocessen.
+Een wijziging wordt eerst naar een tijdelijk bestand geschreven en geflusht en vervolgens atomair vervangen. Bij een blijvende schrijffout blijft de vorige in-memory status behouden en wordt het tijdelijke bestand opgeruimd. V0.3 weigert een tweede proces op dezelfde gegevensmap met een exclusieve lock. Er is geen garantie tegen alle vormen van diskcorruptie of stroomuitval; een crash kan gecontroleerd lockherstel vereisen.
 
 Opgeslagen lopende jobs worden bij herstart gecontroleerd en binnen de pogingenlimiet opnieuw ingepland. Import en successtatus worden in dezelfde store-mutatie vastgelegd. Mislukte jobs zijn zichtbaar en kunnen maximaal drie pogingen krijgen. Er zijn maximaal 20 actieve jobs, 200 bewaarde jobs en 200 snapshots. Limieten geven een fout; historie wordt niet stilzwijgend verwijderd.
 

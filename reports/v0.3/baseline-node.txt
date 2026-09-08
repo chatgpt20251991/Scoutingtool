@@ -1,0 +1,147 @@
+
+> omniscout-research-radar@0.2.0 verify
+> npm run check && npm test && npm run preview:build
+
+
+> omniscout-research-radar@0.2.0 check
+> node tools/check.mjs
+
+Syntax OK: src/engine.mjs
+Syntax OK: src/fixtures.mjs
+Syntax OK: src/import/index.mjs
+Syntax OK: src/ingestion/coverage.mjs
+Syntax OK: src/ingestion/index.mjs
+Syntax OK: src/ingestion/local-json.mjs
+Syntax OK: src/server.mjs
+Syntax OK: src/store.mjs
+Syntax OK: public/app.js
+Syntax OK: worker/index.mjs
+Syntax OK: tests/engine.test.mjs
+Syntax OK: tests/import-api.test.mjs
+Syntax OK: tests/import-review.test.mjs
+Syntax OK: tests/import.test.mjs
+Syntax OK: tests/ingestion.test.mjs
+Syntax OK: tests/server.test.mjs
+Syntax OK: tests/worker.test.mjs
+Syntax OK: tools/browser-e2e.mjs
+Syntax OK: tools/build-preview.mjs
+Syntax OK: tools/check.mjs
+Syntax OK: tools/offline-smoke.mjs
+
+> omniscout-research-radar@0.2.0 test
+> node --test tests/*.test.mjs
+
+✔ fixture catalog is valid and all football records are explicitly synthetic (11.1308ms)
+✔ null, zero, invalid and negative minutes never produce a per-90 value (0.5782ms)
+✔ an observed zero remains a valid zero (2.5705ms)
+✔ percentages reject inconsistent numerator and denominator (0.5448ms)
+✔ age is calculated at the cutoff, including birthdays (0.6155ms)
+✔ source use is blocked if rights expire, begin later or omit the specific purpose (6.7281ms)
+✔ future records and unavailable publication dates do not leak into a cutoff (1.02ms)
+✔ provider identity never merges players based on names (1.0351ms)
+✔ source freshness distinguishes old, current and missing timestamps (6.4491ms)
+✔ unknown statistics remain in the exploration queue (2.9746ms)
+✔ short appearances are not labelled as well-documented despite high per-90 rates (1.2496ms)
+✔ keeper and defender discovery does not depend on goals or assists (1.0466ms)
+✔ feed coverage version changes cannot produce a fictional performance trend (0.4086ms)
+✔ incompatible definitions and unequal match windows cannot produce a trend (0.8052ms)
+✔ comparable windows return their observed minutes difference, not a growth forecast (0.327ms)
+✔ cutoff filtering removes later stats without treating them as observed zeros (3.8922ms)
+✔ expired sources block the entire dossier (1.3769ms)
+✔ unknown ages and minors are excluded from this adult prototype (1.3129ms)
+✔ stale feeds require exploration rather than retaining a current evidence badge (1.3974ms)
+✔ counterevidence is retained alongside positive evidence (1.0391ms)
+✔ untrusted text cannot change deterministic rules (5.4179ms)
+✔ search works by role, age, country, region and coverage route (81.1834ms)
+✔ new means new for the local club; decisions do not alter measured quality (4.5723ms)
+✔ last scout decision determines shortlist membership (3.1875ms)
+✔ coverage is per data type and lack of connection remains explicit (0.4697ms)
+✔ budget rejections are not encoded as negative talent labels (2.88ms)
+✔ CSV neutralizes formula injection, quotes and preserves missing values (1.1301ms)
+✔ exports include provenance, cutoff and synthetic data notice (3.2147ms)
+✔ snapshot validation rejects duplicate provider IDs and missing rights (4.9096ms)
+✔ snapshot validation rejects negative measures and missing coverage dimensions (1.906ms)
+✔ import preview writes nothing; malformed, oversized and unauthorized imports leave state unchanged (477.005ms)
+✔ import, dossier, shortlist, research, CSV, duplicate import and restart use one durable isolated workspace (402.0325ms)
+✔ an importer cannot bypass separate export rights through CSV or workspace JSON (48.1713ms)
+✔ filesystem replacement failure preserves the previous in-memory and durable state and allows recovery (41.1769ms)
+✔ review: current export revocation also blocks historical CSV and workspace exports (571.1992ms)
+✔ review: confirmation requires an object envelope and cannot create a job without a snapshot ID (43.5555ms)
+✔ review: malformed rights and enum objects yield validation errors rather than server exceptions (47.3879ms)
+✔ review: later source expiry blocks historical reads and never exposes raw snapshots in workspace state (50.4682ms)
+✔ review: competition ID reuse cannot relabel prior observations into another season (6.4631ms)
+✔ review: corrected counts preserve prior dossiers, counterevidence, and do not become a growth signal (8.1783ms)
+✔ review: duplicate names remain distinct, while a disputed provider identity prevents all writes (80.3227ms)
+✔ review: HTML and formula text stay data across import, dossier, and protected CSV download (64.077ms)
+✔ review: rollback dependency guards restore the prior version without removing retained history (100.4706ms)
+✔ bounded sample validates, preview is pure, SHA256 ignores object key order (71.0481ms)
+✔ invalid JSON, nonobjects, wrong version and unknown fields are rejected (58.5625ms)
+✔ one MiB limit uses UTF8 bytes; collection limits and nested values are bounded (90.6802ms)
+✔ explicit current rights, lifetime and declaration are mandatory (95.5659ms)
+✔ calendar validity, adult identity and every timestamp are checked (210.0603ms)
+✔ metric types, explicit nullable minutes and sample consistency are validated (53.8607ms)
+✔ coverage uses seven dimensions, source, season and real denominator (59.6397ms)
+✔ equal names remain independent; IDs and provider identities cannot conflict (37.2321ms)
+✔ snapshot and observation IDs are immutable, idempotency leaves history/counts stable (21.3699ms)
+✔ correction preserves old as-of revision and never synthesizes a development window (16.3509ms)
+✔ future as-of snapshots and expired current rights are excluded on every read (5.246ms)
+✔ current export revocation also applies to historical dossiers (15.7676ms)
+✔ competition season cannot silently relabel older players, and revisions cannot be backdated (12.5651ms)
+✔ rollback is append-only, idempotent, restores prior revision, and rejects dependent rollback (18.5681ms)
+✔ source status cannot change and atomic validation keeps previous state intact (11.5237ms)
+✔ counterevidence and injection strings survive as inert text with provenance (5.5752ms)
+✔ local adapter accepts only bounded UTF-8 JSON bytes and never connects a provider (15.0132ms)
+✔ coverage keeps seven independent dimensions and counts only catalog players (2.2156ms)
+✔ coverage percentages need a known consistent denominator and never establish measurement completeness (1.5039ms)
+✔ confirmed job applies immutable data and succeeds in the same durable transaction (536.9046ms)
+✔ invalid payload and stale preview digest write no jobs or imported records (11.3766ms)
+✔ queue module rejects string, array, and null envelopes before retaining a job (4.7891ms)
+✔ concurrent duplicate confirmations share one job and one imported snapshot (82.2735ms)
+✔ snapshot IDs cannot be reused with changed content while queued (28.8588ms)
+✔ caller mutation after enqueue cannot alter the persisted job (17.7994ms)
+✔ a failed commit leaves no partial data and explicit retry succeeds once (32.8755ms)
+✔ repeated processing errors are visible and retries stop after three attempts (38.1233ms)
+✔ execution rechecks source expiry after confirmation and rejects expired retry (15.0254ms)
+✔ restart recovers interrupted and queued work using persisted immutable payloads (16.06ms)
+✔ restart never resets exhausted attempts or hides interrupted failures (6.4809ms)
+✔ pending queue is bounded and rejects extra jobs without dropping admitted work (369.1056ms)
+✔ retained history has a hard bound and is never silently pruned (302.289ms)
+✔ unknown or nonfailed jobs cannot be retried (9.0215ms)
+✔ health explicitly states synthetic demo and zero live sources (211.549ms)
+✔ HTTP serves only known public files, not the repository (70.2429ms)
+✔ security headers block framing and arbitrary script origins (10.8854ms)
+✔ DNS rebinding-style hostnames are denied (20.3613ms)
+✔ writes require a valid session token (12.228ms)
+✔ cross-origin and cross-site requests are denied (7.1287ms)
+✔ Unicode session-token input does not trigger a server exception (6.3277ms)
+✔ API search filters synthetic players (12.3573ms)
+✔ unknown player IDs cannot be saved (6.1236ms)
+✔ invalid actions and unsupported request content are rejected (9.0629ms)
+✔ archive decisions require a note and preserve a budget reason (12.1527ms)
+✔ shortlist decisions persist and are recorded in audit events (9.0774ms)
+✔ retrying the same research request does not create a duplicate (15.2372ms)
+✔ an idempotency key cannot silently overwrite another task (4.3778ms)
+✔ completing a task requires a written observation (12.2854ms)
+✔ brief validation rejects minors and invalid age ranges (11.3669ms)
+✔ a valid structured brief is saved without pretending to parse its text with AI (7.5534ms)
+✔ oversized requests are rejected (12.8551ms)
+✔ shortlist CSV can be downloaded with a synthetic-data label (8.7304ms)
+✔ file persistence survives reopening and serializes concurrent writes (210.1261ms)
+✔ edge health never claims to be a live ingestion worker (187.3242ms)
+✔ edge demo refuses writes until production state and auth exist (1.3045ms)
+✔ edge filters the same fixture engine as the local version (44.5199ms)
+✔ edge missing asset bindings fail visibly (1.1854ms)
+✔ edge asset responses have security headers (2.4166ms)
+ℹ tests 101
+ℹ suites 0
+ℹ pass 101
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2183.0671
+
+> omniscout-research-radar@0.2.0 preview:build
+> node tools/build-preview.mjs
+
+Gebouwd: OmniScout-preview.html (offline demo) en dist/ (edge-demo assets). Geen publicatie uitgevoerd.

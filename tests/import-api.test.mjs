@@ -8,8 +8,20 @@ import { createStore } from '../src/store.mjs';
 
 const sample = JSON.parse(await readFile(new URL('../samples/import-demo.json', import.meta.url), 'utf8'));
 const now = () => '2026-09-08T12:00:00.000Z';
+test('default import as-of uses the same instant as validation when the clock advances', async () => {
+  let instant = Date.parse(now());
+  const app = await createApp({ authRequired: false, now: () => new Date(instant++).toISOString() });
+  await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
+  try {
+    const base = `http://127.0.0.1:${app.server.address().port}`;
+    for (const route of ['catalog', 'state', 'coverage']) {
+      const response = await fetch(`${base}/api/${route}?dataset=import`);
+      assert.equal(response.status, 200, await response.text());
+    }
+  } finally { await app.importQueue.idle(); await new Promise(resolve => app.server.close(resolve)); }
+});
 async function start(statePath = null) {
-  const app = await createApp({ statePath, now });
+  const app = await createApp({ authRequired: false, statePath, now });
   await new Promise(resolve => app.server.listen(0, '127.0.0.1', resolve));
   const base = `http://127.0.0.1:${app.server.address().port}`;
   const { csrf } = await (await fetch(base + '/api/session')).json();

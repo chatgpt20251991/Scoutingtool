@@ -1,5 +1,6 @@
 import { CATALOG } from '/modules/fixtures.mjs';
-let catalog = CATALOG;
+const emptyCatalog = () => ({ ...CATALOG, asOf: null, players: [], sources: [], competitions: [] });
+let catalog = emptyCatalog();
 import { ROLE_LABELS, ACTION_LABELS, REASON_LABELS, COVERAGE_FIELDS, COVERAGE_LABELS, COVERAGE_STATES, buildDossier, findPlayers, dossierCSV } from '/modules/engine.mjs';
 
 const icons = {
@@ -30,58 +31,104 @@ const blankState = () => ({ version: 1, decisions: [], tasks: [], brief: { role:
 const storageKey = 'omniscout.synthetic-demo.v1';
 const datasetKey = 'omniscout.dataset.v1';
 let state = blankState(), backend = null, storageWorking = true, dataset = 'demo', preferredDataset = 'demo', datasetLoading = true, mutationCount = 0, workspaceError = '';
-try { const saved = JSON.parse(localStorage.getItem(storageKey) || 'null'); if (saved?.version === 1 && ['decisions', 'tasks', 'audit'].every(k => Array.isArray(saved[k]))) state = saved; } catch { storageWorking = false; }
+// Account workspaces never read browser notes. Existing standalone demo work is preserved.
 try { if (localStorage.getItem(datasetKey) === 'import') preferredDataset = 'import'; } catch { /* Dataset preference is optional. */ }
 let demoState = state;
+let environment = window.OMNI_INLINE || location.protocol === 'file:' ? 'standalone' : 'checking';
+let organizationId = '', epoch = 0, authMode = 'login', authError = '', authBusy = false, expiryTimer, sessionCheck;
+const requests = new Set();
+const accountUI = { members: [], stats: null, statsError: '', error: '', loading: false, invite: null, migrationRequired: false, migrationMessage: '' };
+const membership = () => backend?.organizations?.find(org => org.id === organizationId);
+const roleLabels = { owner: 'Eigenaar', scout: 'Scout', viewer: 'Alleen lezen' };
+const isAccounts = () => environment === 'local_accounts';
+const isAuthenticated = () => Boolean(isAccounts() && backend?.authenticated);
+const canWrite = () => ['standalone', 'edge'].includes(environment) || Boolean(backend && (!isAccounts() || ['owner', 'scout'].includes(membership()?.role)));
+const staleError = () => Object.assign(new Error('De werkruimte is intussen gewijzigd.'), { stale: true });
+const context = () => ({ epoch, organizationId });
+function assertContext(ctx) { if (ctx.epoch !== epoch || ctx.organizationId !== organizationId) throw staleError(); }
 const importUI = { payload: null, preview: null, filename: '', error: '', busy: false, sequence: 0, jobs: [], snapshots: [], jobsError: '', jobsLoading: false, rolledBack: new Set() };
 let jobsTimer;
 let view = 'radar', filters = { search: '', role: '', region: '', competition: '', quality: '', minAge: 18, maxAge: 23, newOnly: false, lowerOnly: false };
 let comparison = new Set(), openPlayerId = null;
 const main = document.querySelector('#main'), dossierDialog = document.querySelector('#dossier-dialog'), actionDialog = document.querySelector('#action-dialog');
-const viewLabels = { radar: 'Wereldradar', tasks: 'Onderzoeksbord', shortlist: 'Shortlist', coverage: 'Datadekking', import: 'Bronimport', brief: 'Clubvraag', log: 'Beslislogboek' };
+const viewLabels = { radar: 'Wereldradar', tasks: 'Onderzoeksbord', shortlist: 'Shortlist', coverage: 'Datadekking', import: 'Bronimport', brief: 'Clubvraag', log: 'Beslislogboek', account: 'Account & club' };
 let toastTimeout;
 function notify(message, error = false) { const el = document.querySelector('#toast'); el.textContent = message; el.className = `toast show ${error ? 'error' : ''}`; clearTimeout(toastTimeout); toastTimeout = setTimeout(() => el.classList.remove('show'), 4500); }
-function persist() { if (dataset !== 'demo') throw new Error('Importgegevens worden uitsluitend in de lokale backend opgeslagen.'); demoState = state; try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch { storageWorking = false; notify('Browseropslag niet beschikbaar. Wijzigingen blijven alleen in deze tab.', true); } }
+function restoreDemo() { try { const saved = JSON.parse(localStorage.getItem(storageKey) || 'null'); if (saved?.version === 1 && ['decisions', 'tasks', 'audit'].every(key => Array.isArray(saved[key]))) state = saved; demoState = state; } catch { storageWorking = false; } }
+function persist() { if (dataset !== 'demo' || !['standalone', 'edge'].includes(environment)) throw new Error('Clubgegevens worden uitsluitend in de lokale backend opgeslagen.'); demoState = state; try { localStorage.setItem(storageKey, JSON.stringify(state)); } catch { storageWorking = false; notify('Browseropslag niet beschikbaar. Demowijzigingen blijven alleen in deze tab.', true); } }
 function addAudit(action, objectId, detail = '') { state.audit.push({ id: newId(), action, objectId, detail, at: new Date().toISOString(), actor: 'browser-demo-user' }); }
 const scopedPath = (path, selected = dataset) => `${path}${path.includes('?') ? '&' : '?'}dataset=${encodeURIComponent(selected)}`;
 const canImport = () => Boolean(backend?.supportsImport && !window.OMNI_INLINE);
 const sourceLabel = source => source?.status === 'synthetic' ? 'Synthetische testimport' : source?.status === 'approved' ? 'Importverklaring · niet onafhankelijk geverifieerd' : 'Bronstatus ontbreekt of is ongeldig';
 const playerLabel = player => dataset === 'demo' ? 'Fictief profiel' : player?.synthetic ? 'Synthetische testimport' : 'Importverklaring · niet onafhankelijk geverifieerd';
 function datasetLabel() { return dataset === 'demo' ? 'Fictieve testgegevens' : !catalog.players.length ? 'Lokale import · geen beschikbare profielen' : catalog.players.every(p => p.synthetic) ? 'Synthetische testimport' : 'Importgegevens · verklaring niet onafhankelijk geverifieerd'; }
-async function readJSON(path) {
-  const response = await fetch(path, { cache: 'no-store' });
-  const result = await response.json();
-  if (!response.ok) throw new Error(result.error || 'Lokale gegevens ophalen mislukt.');
-  return result;
+function clearWorkspace() {
+  epoch++; for (const controller of requests) controller.abort(); requests.clear();
+  clearTimeout(jobsTimer); clearTimeout(toastTimeout); mutationCount = 0;
+  state = blankState(); catalog = emptyCatalog(); demoState = blankState(); comparison.clear(); openPlayerId = null;
+  filters = { search: '', role: '', region: '', competition: '', quality: '', minAge: 18, maxAge: 23, newOnly: false, lowerOnly: false };
+  dossierDialog.close(); actionDialog.close(); document.querySelector('#dossier-content').replaceChildren(); document.querySelector('#action-content').replaceChildren();
+  document.querySelector('#toast').textContent = ''; document.querySelector('#toast').className = 'toast';
+  Object.assign(importUI, { payload: null, preview: null, filename: '', error: '', busy: false, sequence: importUI.sequence + 1, jobs: [], snapshots: [], jobsError: '', jobsLoading: false, rolledBack: new Set() });
+  Object.assign(accountUI, { members: [], stats: null, statsError: '', error: '', loading: false, invite: null, migrationRequired: false, migrationMessage: '' });
+  main.replaceChildren();
 }
+function loseSession(message = 'Je sessie is verlopen. Meld je opnieuw aan.') {
+  clearWorkspace(); clearTimeout(expiryTimer); backend = null; organizationId = ''; environment = 'local_accounts'; datasetLoading = false; authMode = 'login'; authError = message; render();
+}
+async function api(path, { method = 'GET', data, publicRequest = false, raw = false } = {}) {
+  const ctx = context(), controller = new AbortController(); requests.add(controller);
+  const headers = {};
+  if (isAccounts() && organizationId) headers['X-Omniscout-Organization'] = organizationId;
+  if (method !== 'GET') { headers['Content-Type'] = 'application/json'; headers['X-Omniscout-CSRF'] = backend?.csrf || ''; }
+  try {
+    const response = await fetch(path, { method, headers, credentials: 'same-origin', cache: 'no-store', signal: controller.signal, ...(data === undefined ? {} : { body: JSON.stringify(data) }) });
+    const result = raw && response.ok ? await response.text() : await response.json(); assertContext(ctx);
+    if (!response.ok) {
+      const error = Object.assign(new Error(result.error || 'Verzoek mislukt.'), { status: response.status, details: result.details });
+      if (response.status === 401 && isAccounts() && !publicRequest) { loseSession(); void checkSession(); }
+      if (response.status === 403 && isAccounts() && !publicRequest) { clearWorkspace(); datasetLoading = true; render(); void checkSession({ reload: true }); }
+      throw error;
+    }
+    return result;
+  } catch (error) { if (error.name === 'AbortError' || ctx.epoch !== epoch) { if (error.status === 401 || error.status === 403) throw error; throw staleError(); } throw error; }
+  finally { requests.delete(controller); }
+}
+async function readJSON(path) { return api(path, { publicRequest: path === '/api/session' || path === '/api/import/sample' }); }
 async function refreshWorkspace(selected = dataset) {
+  const ctx = context();
   const result = await readJSON(scopedPath('/api/state', selected));
+  assertContext(ctx);
   if (dataset === selected) state = result;
 }
 async function request(path, method, data, { refresh = !path.startsWith('/api/import/') } = {}) {
   if (!backend) throw new Error('Deze actie vereist de lokale Node-backend.');
+  if (!canWrite()) throw new Error('Je hebt alleen leesrechten in deze club. Vraag een eigenaar om de scoutrol.');
+  const ctx = context();
   const selected = dataset, workspaceMutation = !path.startsWith('/api/import/');
   mutationCount++; updateCounts();
   try {
-    const r = await fetch(workspaceMutation ? scopedPath(path, selected) : path, { method, headers: { 'Content-Type': 'application/json', 'X-Omniscout-CSRF': backend.csrf }, body: JSON.stringify(workspaceMutation ? { ...data, dataset: selected } : data) });
-    const result = await r.json();
-    if (!r.ok) { const error = new Error(result.error || 'Opslaan mislukt.'); error.details = result.details; throw error; }
+    const result = await api(workspaceMutation ? scopedPath(path, selected) : path, { method, data: workspaceMutation ? { ...data, dataset: selected } : data });
     if (refresh) await refreshWorkspace(selected);
+    assertContext(ctx);
     return result;
-  } finally { mutationCount--; updateCounts(); }
+  } finally { if (ctx.epoch === epoch) { mutationCount--; updateCounts(); } }
 }
 async function selectDataset(selected, { remember = true } = {}) {
   if (!['demo', 'import'].includes(selected)) return;
   if (selected === 'import' && !canImport()) throw new Error('Lokale import vereist de Node-app. De zelfstandige en edge-demo tonen alleen fictieve gegevens.');
-  datasetLoading = true; updateCounts();
+  if (isAccounts() && (!isAuthenticated() || !organizationId)) return;
+  const savedDemo = demoState; clearWorkspace(); const ctx = context(); datasetLoading = true; render();
   try {
-    const [nextCatalog, nextState] = backend ? await Promise.all([readJSON(scopedPath('/api/catalog', selected)), readJSON(scopedPath('/api/state', selected))]) : [CATALOG, demoState];
+    const [nextCatalog, nextState] = backend && environment !== 'edge' ? await Promise.all([readJSON(scopedPath('/api/catalog', selected)), readJSON(scopedPath('/api/state', selected))]) : [CATALOG, savedDemo];
+    assertContext(ctx);
     dataset = selected; catalog = nextCatalog; state = nextState; workspaceError = '';
     comparison.clear(); filters = { ...filters, search: '', competition: '', region: '', quality: '' };
     dossierDialog.close(); actionDialog.close(); openPlayerId = null;
     if (remember) { preferredDataset = selected; try { localStorage.setItem(datasetKey, selected); } catch { /* Never cache imported data. */ } }
     render();
-  } finally { datasetLoading = false; updateCounts(); }
+  } catch (error) { if (!error.stale && ctx.epoch === epoch) workspaceError = error.message; throw error; }
+  finally { if (ctx.epoch === epoch) { datasetLoading = false; render(); if (view === 'import') void loadImportJobs(); } }
 }
 async function saveDecision(playerId, action, reason, note = '') {
   if (backend) await request('/api/decisions', 'POST', { playerId, action, reason, note });
@@ -91,10 +138,26 @@ async function saveDecision(playerId, action, reason, note = '') {
 function latestDecision(id) { return state.decisions.filter(x => x.playerId === id).at(-1); }
 function isShortlisted(id) { return latestDecision(id)?.action === 'follow'; }
 function updateCounts() {
+  document.querySelectorAll('input[type="password"]').forEach(input => { input.maxLength = 128; });
+  const locked = ['checking', 'unavailable'].includes(environment) || (isAccounts() && !isAuthenticated());
+  document.body.classList.toggle('auth-locked', locked);
+  document.querySelector('#nav').hidden = locked;
+  document.querySelector('.demo-banner').hidden = locked;
+  document.querySelector('.dataset-bar').hidden = locked || (isAccounts() && !organizationId);
+  document.querySelector('#organization-bar').hidden = !isAuthenticated();
+  document.querySelector('#nav [data-view="account"]').hidden = !isAuthenticated();
+  const orgPicker = document.querySelector('#organization-select');
+  if (isAuthenticated()) {
+    const organizations = backend.organizations || [];
+    orgPicker.innerHTML = organizations.length ? organizations.map(org => `<option value="${esc(org.id)}" ${org.id === organizationId ? 'selected' : ''}>${esc(org.name)}</option>`).join('') : '<option value="">Nog geen club</option>';
+    orgPicker.disabled = datasetLoading || mutationCount > 0 || !organizations.length;
+  } else orgPicker.replaceChildren();
+  document.querySelector('#organization-role').textContent = membership() ? `${roleLabels[membership().role]} · ${backend.user.displayName || backend.user.username}` : '';
+  document.querySelector('#workspace-name').innerHTML = isAuthenticated() ? `${esc(membership()?.name || 'Kies een club')}<small>${esc(roleLabels[membership()?.role] || 'Account')}</small>` : 'Scouting Lab<small>Lokale testomgeving</small>';
   document.querySelector('#task-count').textContent = state.tasks.filter(t => t.status === 'todo').length;
   document.querySelector('#shortlist-count').textContent = catalog.players.filter(p => isShortlisted(p.id)).length;
   document.querySelector('#player-count').textContent = catalog.players.length;
-  document.querySelector('#storage-status').textContent = workspaceError ? 'Backendgegevens niet geladen' : backend ? backend.persistence === 'memory' ? 'Node-backend · tijdelijk geheugen' : 'Lokaal opgeslagen op dit apparaat' : storageWorking ? 'Preview · browseropslag' : 'Preview · tijdelijk geheugen';
+  document.querySelector('#storage-status').textContent = locked ? 'Geen clubgegevens zichtbaar' : workspaceError ? 'Backendgegevens niet geladen' : backend && environment !== 'edge' ? backend.persistence === 'memory' ? 'Node-backend · tijdelijk geheugen' : 'Lokaal opgeslagen op dit apparaat' : environment === 'edge' ? 'Alleen-lezen synthetische demo' : storageWorking ? 'Preview · browseropslag' : 'Preview · tijdelijk geheugen';
   const picker = document.querySelector('#dataset-select');
   picker.value = dataset; picker.disabled = datasetLoading || mutationCount > 0;
   picker.querySelector('[value="import"]').disabled = !canImport();
@@ -102,6 +165,77 @@ function updateCounts() {
   document.querySelector('.date-label').textContent = `PEILDATUM ${dates(catalog.asOf)}`;
   document.querySelector('.demo-chip').textContent = dataset === 'demo' ? 'DEMO' : 'IMPORT';
   document.querySelector('.demo-banner p').innerHTML = dataset === 'demo' ? '<strong>Fictieve testomgeving.</strong> Alle spelers, clubs, competities en statistieken zijn voorbeelden. <strong>0 live databronnen.</strong>' : `<strong>${esc(datasetLabel())}.</strong> Bronrechten en inhoud zijn verklaringen van de importeur. Geen live providerverbinding of onafhankelijk geverifieerde scoutingdekking.`;
+  applyAccess();
+}
+function applyAccess() {
+  if (canWrite()) return;
+  document.querySelectorAll('[data-save], [data-task], [data-action="create-task"], [data-action="decision"], [data-import-retry], [data-import-rollback], #import-file, #import-confirm, #brief-form [type="submit"], #brief-form input, #brief-form textarea, #brief-form select').forEach(el => { el.disabled = true; el.title = 'Alleen lezen: een eigenaar kan je de scoutrol geven.'; });
+}
+function renderAuth() {
+  if (environment === 'checking') { main.innerHTML = '<section class="panel auth-panel" role="status"><h1>Werkruimte openen…</h1><p>De lokale sessie wordt gecontroleerd.</p></section>'; return; }
+  if (environment === 'unavailable') { main.innerHTML = `<section class="panel auth-panel"><h1>De werkruimte is niet bereikbaar.</h1><p>Clubgegevens zijn gewist uit dit scherm. Controleer of de lokale Node-app draait en probeer opnieuw.</p><p class="import-error" role="alert">${esc(authError)}</p><button class="button primary" data-action="session-retry">Opnieuw verbinden</button></section>`; return; }
+  const setup = backend?.setupRequired === true, mode = setup ? 'setup' : authMode;
+  main.innerHTML = `<section class="panel auth-panel"><span class="eyebrow">OMNI-SCOUT · LOKALE CLUBWERKRUIMTE</span><h1>${mode === 'setup' ? 'Richt je eerste club in.' : mode === 'register' ? 'Neem je uitnodiging aan.' : 'Welkom terug.'}</h1><p>${mode === 'setup' ? 'Maak een eigenaaraccount. Eerdere lokale scoutinggegevens worden bij deze eerste club ondergebracht.' : mode === 'register' ? 'Gebruik de eenmalige code van een clubeigenaar. Je rol is vastgelegd in de uitnodiging.' : 'Meld je aan om de gegevens van jouw clubs te openen.'}</p><form id="auth-form" data-mode="${mode}">${mode === 'register' ? '<label>Uitnodigingscode<input name="inviteToken" required maxlength="200" autocomplete="off" spellcheck="false"></label>' : ''}${mode !== 'login' ? '<label>Weergavenaam<input name="displayName" required maxlength="80" autocomplete="name"></label>' : ''}${mode === 'setup' ? '<label>Clubnaam<input name="organizationName" required maxlength="100" autocomplete="organization"></label>' : ''}<label>Gebruikersnaam<input name="username" required minlength="3" maxlength="64" autocomplete="username" autocapitalize="none" spellcheck="false"></label><label>Wachtwoord<input name="password" type="password" required ${mode === 'login' ? '' : 'minlength="15"'} maxlength="256" autocomplete="${mode === 'login' ? 'current-password' : 'new-password'}"></label>${mode !== 'login' ? '<p class="form-note">Gebruik minimaal 15 tekens. Bewaar je wachtwoord veilig; deze lokale versie verstuurt geen herstelmails.</p>' : ''}<p id="auth-error" class="import-error" role="alert" ${authError ? '' : 'hidden'}>${esc(authError)}</p><button class="button primary" type="submit" ${authBusy || !backend?.csrf ? 'disabled' : ''}>${authBusy ? 'Even wachten…' : mode === 'setup' ? 'Eigenaar en club aanmaken' : mode === 'register' ? 'Account aanmaken' : 'Aanmelden'}</button></form>${!setup ? `<button class="text-button auth-alternative" data-action="auth-mode" data-mode="${mode === 'login' ? 'register' : 'login'}">${mode === 'login' ? 'Ik heb een uitnodigingscode' : 'Ik heb al een account'}</button>` : ''}<p class="form-note">Accounts en clubgegevens blijven op de lokale Node-app. Er zijn geen live databronnen aangesloten.</p>${!backend?.csrf ? '<button class="button secondary" data-action="session-retry">Verbinding opnieuw controleren</button>' : ''}</section>`;
+}
+function renderAccount() {
+  const org = membership(), owner = org?.role === 'owner';
+  main.innerHTML = heading('JOUW ACCOUNT EN CLUBWERKRUIMTE', 'Werk samen. Houd overzicht.', 'Elke club heeft een eigen importcatalogus, shortlist, onderzoeksbord en logboek.') + `<div class="account-grid"><section class="panel form-panel"><h2>${esc(backend.user.displayName || backend.user.username)}</h2><p class="muted-copy">Gebruikersnaam: ${esc(backend.user.username)}</p><p class="muted-copy">Actieve club: <strong>${esc(org?.name || 'Nog geen club')}</strong> · ${esc(roleLabels[org?.role] || '')}</p><p class="form-note">${org?.role === 'viewer' ? 'Je hebt alleen leesrechten. Een eigenaar kan je de scoutrol geven om onderzoek en imports te wijzigen.' : org?.role === 'scout' ? 'Je kunt scoutingwerk en imports wijzigen. Clubleden worden beheerd door een eigenaar.' : 'Als eigenaar beheer je scoutingwerk, uitnodigingen en rollen. De laatste eigenaar kan niet worden verwijderd.'}</p><div id="workspace-stats">${accountUI.stats ? renderStats(accountUI.stats) : '<p class="muted-copy">Werkruimte-informatie ophalen…</p>'}</div><button class="button secondary" data-action="account-refresh">Vernieuwen</button><button class="button secondary" data-action="logout">Afmelden</button></section><form id="organization-form" class="panel form-panel"><h2>Nieuwe clubwerkruimte</h2><p class="form-note">De nieuwe club begint leeg. Bestaande clubgegevens worden niet gekopieerd.</p><label>Clubnaam<input name="name" required maxlength="100" autocomplete="organization"></label><button class="button primary" type="submit">Club aanmaken</button></form><form id="password-form" class="panel form-panel"><h2>Wachtwoord wijzigen</h2><label>Huidig wachtwoord<input name="currentPassword" type="password" required maxlength="256" autocomplete="current-password"></label><label>Nieuw wachtwoord<input name="newPassword" type="password" required minlength="15" maxlength="256" autocomplete="new-password"></label><p class="form-note">Minimaal 15 tekens. Andere bestaande sessies worden afgesloten.</p><button class="button primary" type="submit">Wachtwoord wijzigen</button></form>${owner ? `<form id="invite-form" class="panel form-panel"><h2>Nodig een clublid uit</h2><label>Rol<select name="role"><option value="viewer">Alleen lezen</option><option value="scout">Scout · scouting en import wijzigen</option><option value="owner">Eigenaar · ook leden beheren</option></select></label><p class="form-note">Er wordt geen e-mail verstuurd. Deel de eenmalige code zelf met de bedoelde persoon, die deze lokale app moet kunnen bereiken.</p><button class="button primary" type="submit">Uitnodigingscode maken</button>${accountUI.invite ? `<div class="invite-result" role="status"><label>Eenmalige code<textarea id="invite-code" readonly rows="3" autocomplete="off" spellcheck="false">${esc(accountUI.invite.token)}</textarea></label><p class="form-note">Rol: ${esc(roleLabels[accountUI.invite.role])} · geldig tot ${esc(new Date(accountUI.invite.expiresAt).toLocaleString('nl-NL'))}. Kopieer de code nu. Deze wordt niet in je browser opgeslagen en verdwijnt wanneer je dit scherm verlaat.</p></div>` : ''}</form>` : ''}</div><section class="panel form-panel account-members"><div class="panel-head"><h2>Clubleden</h2><span class="status-tag neutral">${esc(org?.name || 'Geen club')}</span></div>${accountUI.loading ? '<p role="status" class="muted-copy">Leden ophalen…</p>' : ''}${accountUI.error ? `<p class="import-error" role="alert">${esc(accountUI.error)}</p>` : ''}${accountUI.members.length ? `<div class="table-scroll"><table class="members-table"><thead><tr><th>Naam</th><th>Gebruikersnaam</th><th>Rol</th>${owner ? '<th>Beheer</th>' : ''}</tr></thead><tbody>${accountUI.members.map(member => { const user = member.user || member, userId = member.userId || user.id; return `<tr><td>${esc(user.displayName || user.username)}</td><td>${esc(user.username)}</td><td>${esc(roleLabels[member.role])}</td>${owner ? `<td><form class="member-role-form" data-user="${esc(userId)}"><select name="role" aria-label="Rol voor ${esc(user.username)}">${Object.entries(roleLabels).map(([role, label]) => `<option value="${role}" ${role === member.role ? 'selected' : ''}>${esc(label)}</option>`).join('')}</select><button class="button secondary compact" type="submit">Rol opslaan</button><button class="button secondary compact" type="button" data-remove-member="${esc(userId)}" data-member-name="${esc(user.displayName || user.username)}">Verwijderen</button></form></td>` : ''}</tr>`; }).join('')}</tbody></table></div>` : '<p class="muted-copy">Geen ledenoverzicht beschikbaar.</p>'}</section>`;
+  if (!owner) document.querySelector('.account-members').innerHTML = `<h2>Clubleden</h2><p class="form-note">Een clubeigenaar beheert uitnodigingen, het ledenoverzicht en rollen. Je huidige rol staat bij de actieve club.</p>${accountUI.error ? `<p class="import-error" role="alert">${esc(accountUI.error)}</p>` : ''}`;
+  if (!accountUI.stats && accountUI.statsError) document.querySelector('#workspace-stats').innerHTML = `<p class="import-error" role="status">Werkruimtestatistieken niet beschikbaar: ${esc(accountUI.statsError)}</p>`;
+  if (accountUI.migrationRequired) main.insertAdjacentHTML('afterbegin', `<section class="panel form-panel migration-recovery" id="migration-recovery"><h2>Herstel de overname van eerdere scoutinggegevens</h2><p class="form-note">De eerdere lokale opslag kon niet worden overgenomen. Het oorspronkelijke bestand is behouden en de scoutinggegevens van deze club blijven geblokkeerd tot herstel. Account- en ledenbeheer blijven beschikbaar.</p>${owner ? '<p class="form-note">Maak eerst een veiligheidskopie en herstel het oorspronkelijke lokale statebestand met een geldige versie-1-back-up. Controleer daarna opnieuw. De toepassing vervangt de bron niet en voegt geen gegevens aan een andere club toe.</p><button class="button primary" data-action="recover-migration">Controleer opnieuw en hervat overname</button>' : '<p class="form-note">Vraag een clubeigenaar om de lokale opslag te herstellen.</p>'}<p id="migration-status" class="import-error" role="status">${esc(accountUI.migrationMessage || accountUI.error || 'De eerdere opslag vereist herstel.')}</p></section>`);
+  else if (accountUI.migrationMessage) main.insertAdjacentHTML('afterbegin', `<p id="migration-status" class="notice-card" role="status">${esc(accountUI.migrationMessage)}</p>`);
+  if (!org) {
+    document.querySelector('#workspace-stats').innerHTML = '<p class="form-note">Maak een nieuwe clubwerkruimte aan om scoutinggegevens op te slaan.</p>';
+    document.querySelector('.account-grid section>.form-note').textContent = 'Je account heeft momenteel geen clubtoegang. Je kunt zelf een nieuwe club aanmaken.';
+  }
+}
+function renderStats(stats) {
+  const rows = [];
+  const labels = { players: 'Spelers', competitions: 'Competities', sources: 'Bronnen', jobs: 'Importopdrachten', snapshots: 'Snapshots', tasks: 'Onderzoeksopdrachten', decisions: 'Besluiten', audit: 'Logboekregels', imports: 'Imports', bytes: 'Bytes', organizations: 'Clubs', demo: 'Fictieve demo', import: 'Lokale import', activeJobs: 'Actieve importopdrachten', counts: 'Opgeslagen', limits: 'Limiet', importHistory: 'Importgebeurtenissen', pendingJobs: 'Wachtende importopdrachten', failedJobs: 'Mislukte importopdrachten', tasksPerDataset: 'Onderzoeken per dataset', auditEvents: 'Logboekregels', importJobs: 'Importopdrachten', pendingImportJobs: 'Wachtende importopdrachten', importAttempts: 'Pogingen per import', importBytes: 'Bytes per import' };
+  function collect(value, prefix = '', depth = 0) { if (!value || typeof value !== 'object' || depth > 3) return; for (const [key, item] of Object.entries(value)) { if (typeof item === 'number') rows.push(`<div><dt>${esc(prefix + (labels[key] || key))}</dt><dd>${fmt(item, 0)}</dd></div>`); else if (item && typeof item === 'object') collect(item, `${prefix}${labels[key] || key} · `, depth + 1); } }
+  collect(stats);
+  const counts = stats.counts || {}, summaries = [['Importsnapshots', counts.snapshots], ['Importopdrachten', counts.jobs], ['Onderzoeksopdrachten', (counts.demo?.tasks || 0) + (counts.import?.tasks || 0)], ['Scoutbesluiten', (counts.demo?.decisions || 0) + (counts.import?.decisions || 0)]];
+  return `<dl class="account-stats">${summaries.map(([label, count]) => `<div><dt>${label}</dt><dd>${fmt(count, 0)}</dd></div>`).join('')}</dl><details class="account-storage-detail"><summary>Alle aantallen en opslaggrenzen</summary><dl class="account-stats">${rows.join('')}</dl></details><p class="form-note">Opslag: ${esc(backend.persistence === 'memory' ? 'tijdelijk geheugen; verdwijnt bij afsluiten' : 'lokale bestanden op dit apparaat')}. Herstart van de server sluit sessies af.${stats.migration === 'complete' ? ' Eerdere lokale scoutinggegevens zijn overgenomen; het oorspronkelijke bestand is behouden.' : ''}</p>`;
+}
+async function loadAccount() {
+  if (!isAuthenticated()) return;
+  const ctx = context(); accountUI.loading = true; accountUI.error = ''; accountUI.statsError = ''; if (view === 'account') render();
+  try {
+    if (!organizationId) { accountUI.members = []; accountUI.stats = {}; return; }
+    const [memberResult, statsResult] = await Promise.allSettled([membership()?.role === 'owner' ? readJSON('/api/auth/members') : Promise.resolve([]), readJSON('/api/workspace/stats')]); assertContext(ctx);
+    if (memberResult.status === 'fulfilled') accountUI.members = Array.isArray(memberResult.value) ? memberResult.value : memberResult.value.members || [];
+    else accountUI.error = memberResult.reason.message;
+    if (statsResult.status === 'fulfilled') { accountUI.stats = statsResult.value; accountUI.migrationRequired = false; }
+    else { accountUI.statsError = statsResult.reason.message; accountUI.migrationRequired = statsResult.reason.status === 409 && /migratie|oude opslag/i.test(statsResult.reason.message); }
+  } catch (error) { if (ctx.epoch === epoch && !error.stale) accountUI.error = error.message; }
+  finally { if (ctx.epoch === epoch) { accountUI.loading = false; if (view === 'account') render(); } }
+}
+async function selectOrganization(id, { remember = true } = {}) {
+  if (!backend?.organizations?.some(org => org.id === id)) throw new Error('Deze club is niet beschikbaar voor je account.');
+  clearWorkspace(); organizationId = id; workspaceError = '';
+  if (remember) try { localStorage.setItem('omniscout.organization.v1', id); } catch { /* Preference only. */ }
+  await selectDataset(preferredDataset === 'import' && canImport() ? 'import' : 'demo', { remember: false });
+  if (view === 'account') await loadAccount();
+}
+async function checkSession({ reload = false } = {}) {
+  if (environment === 'standalone' || environment === 'edge') return;
+  const ctx = context();
+  try {
+    const next = await readJSON('/api/session'); assertContext(ctx);
+    if (next.mode === 'synthetic_demo' && next.readOnly === true) { environment = 'edge'; backend = null; catalog = CATALOG; restoreDemo(); datasetLoading = false; render(); return; }
+    if (next.mode === 'local_single_user_demo' && next.csrf) { environment = 'legacy'; backend = next; await selectDataset(preferredDataset === 'import' ? 'import' : 'demo', { remember: false }); return; }
+    if (next.mode !== 'local_accounts') throw new Error('De server heeft geen herkenbare sessiemodus teruggegeven.');
+    const oldUser = backend?.user?.id, oldRole = membership()?.role;
+    environment = 'local_accounts'; backend = next;
+    clearTimeout(expiryTimer);
+    if (!next.authenticated) { clearWorkspace(); organizationId = ''; datasetLoading = false; authMode = next.setupRequired ? 'setup' : authMode; render(); return; }
+    expiryTimer = setTimeout(() => { loseSession(); void checkSession(); }, Math.max(0, Math.min(2147483647, new Date(next.expiresAt).getTime() - Date.now())));
+    let selected = next.organizations?.some(org => org.id === organizationId) ? organizationId : '';
+    if (!selected) { try { const preferred = localStorage.getItem('omniscout.organization.v1'); if (next.organizations.some(org => org.id === preferred)) selected = preferred; } catch { /* Preference only. */ } selected ||= next.organizations?.[0]?.id || ''; }
+    if (!selected) { clearWorkspace(); organizationId = ''; datasetLoading = false; view = 'account'; render(); return; }
+    if (reload || selected !== organizationId || oldUser !== next.user.id || oldRole !== next.organizations.find(org => org.id === selected)?.role) await selectOrganization(selected, { remember: false });
+    else { datasetLoading = false; updateCounts(); }
+  } catch (error) { if (!error.stale && ctx.epoch === epoch) { clearWorkspace(); backend = null; organizationId = ''; environment = 'unavailable'; datasetLoading = false; authError = error.message; render(); } }
 }
 function heading(kicker, title, description, actions = '') { return `<div class="page-heading"><div><div class="eyebrow">${esc(kicker)}</div><h1>${esc(title)}</h1><p>${esc(description)}</p></div><div class="heading-actions">${actions}</div></div>`; }
 function empty(title, detail) { return `<div class="empty-state">${icon('radar')}<h3>${esc(title)}</h3><p>${esc(detail)}</p><button class="button secondary" data-action="reset">Toon alle spelers in deze set</button></div>`; }
@@ -187,12 +321,14 @@ function renderImport() {
   renderImportJobs();
 }
 async function previewFile(file) {
-  if (!file || !canImport()) return;
+  if (!file || !canImport() || !canWrite()) return;
+  const ctx = context();
   const sequence = ++importUI.sequence;
   importUI.busy = true; importUI.payload = null; importUI.preview = null; importUI.error = ''; importUI.filename = file.name; renderImport();
   try {
     if (file.size > 1024 * 1024) throw new Error('Bestand is groter dan 1 MiB. Kies een kleinere JSON-snapshot.');
     let payload; try { payload = JSON.parse(await file.text()); } catch { throw new Error('Ongeldige JSON. Er is niets geïmporteerd.'); }
+    assertContext(ctx);
     const preview = await request('/api/import/preview', 'POST', payload);
     if (sequence !== importUI.sequence) return;
     importUI.payload = payload; importUI.preview = preview;
@@ -201,7 +337,9 @@ async function previewFile(file) {
 }
 async function refreshImportCatalog() {
   if (dataset !== 'import') return;
+  const ctx = context();
   const [nextCatalog, nextState] = await Promise.all([readJSON(scopedPath('/api/catalog', 'import')), readJSON(scopedPath('/api/state', 'import'))]);
+  assertContext(ctx);
   if (dataset !== 'import') return;
   catalog = nextCatalog; state = nextState;
   comparison = new Set([...comparison].filter(id => catalog.players.some(player => player.id === id)));
@@ -210,31 +348,39 @@ async function refreshImportCatalog() {
 }
 async function loadImportJobs() {
   if (!canImport() || importUI.jobsLoading) return;
+  const ctx = context();
   clearTimeout(jobsTimer); importUI.jobsLoading = true;
   try {
     const previous = new Map(importUI.jobs.map(job => [job.id, job.status]));
     const previousSnapshots = JSON.stringify(importUI.snapshots);
     const [result, importedCatalog] = await Promise.all([readJSON('/api/import/jobs'), readJSON(scopedPath('/api/catalog', 'import'))]);
+    assertContext(ctx);
     importUI.jobs = result.jobs; importUI.snapshots = importedCatalog.importSnapshots || []; importUI.jobsError = '';
     if (JSON.stringify(importUI.snapshots) !== previousSnapshots || importUI.jobs.some(job => job.status === 'succeeded' && previous.get(job.id) !== 'succeeded')) await refreshImportCatalog();
-  } catch (error) { importUI.jobsError = `${error.message} Gebruik Vernieuwen om opnieuw te controleren.`; }
+  } catch (error) { if (ctx.epoch === epoch && !error.stale) importUI.jobsError = `${error.message} Gebruik Vernieuwen om opnieuw te controleren.`; }
   finally {
-    importUI.jobsLoading = false; renderImportJobs();
-    if (!importUI.jobsError && importUI.jobs.some(job => ['queued', 'running'].includes(job.status))) jobsTimer = setTimeout(loadImportJobs, 1200);
+    if (ctx.epoch === epoch) {
+      importUI.jobsLoading = false; renderImportJobs(); applyAccess();
+      if (!importUI.jobsError && importUI.jobs.some(job => ['queued', 'running'].includes(job.status))) jobsTimer = setTimeout(loadImportJobs, 1200);
+    }
   }
 }
 async function downloadResponse(path, name, type) {
-  const response = await fetch(path, { cache: 'no-store' });
-  if (!response.ok) { const error = await response.json(); throw new Error(error.error || 'Export niet toegestaan.'); }
-  download(name, await response.text(), type);
+  const ctx = context(); const content = await api(path, { raw: true, publicRequest: path === '/api/import/sample' }); assertContext(ctx); download(name, content, type);
 }
 function render() {
+  if (['checking', 'unavailable'].includes(environment) || (isAccounts() && !isAuthenticated())) { renderAuth(); updateCounts(); document.title = 'Omni-Scout · Aanmelden'; return; }
+  if (isAccounts() && !organizationId) view = 'account';
   document.querySelector('#breadcrumb').textContent = viewLabels[view]; document.title = `Omni-Scout · ${viewLabels[view]}`;
   document.querySelectorAll('#nav [data-view]').forEach(el => { const active = el.dataset.view === view; el.classList.toggle('active', active); if (active) el.setAttribute('aria-current', 'page'); else el.removeAttribute('aria-current'); });
-  ({ radar: () => renderRadar(), shortlist: () => renderRadar(true), tasks: renderTasks, coverage: renderCoverage, import: renderImport, brief: renderBrief, log: renderLog })[view]();
+  if (view === 'account') renderAccount();
+  else if (datasetLoading) main.innerHTML = '<section class="panel auth-panel" role="status"><h2>Clubgegevens ophalen…</h2><p>De vorige werkruimte is gesloten.</p></section>';
+  else if (workspaceError) main.innerHTML = `<section class="panel auth-panel"><h2>Clubgegevens konden niet worden geladen.</h2><p class="import-error" role="alert">${esc(workspaceError)}</p><button class="button primary" data-action="workspace-retry">Opnieuw proberen</button>${isAuthenticated() ? '<button class="button secondary" data-view="account">Account &amp; werkruimtebeheer</button>' : ''}</section>`;
+  else ({ radar: () => renderRadar(), shortlist: () => renderRadar(true), tasks: renderTasks, coverage: renderCoverage, import: renderImport, brief: renderBrief, log: renderLog, account: renderAccount })[view]();
+  if (!canWrite() && !datasetLoading && view !== 'account') main.insertAdjacentHTML('afterbegin', `<div class="notice-card read-only-notice" role="status"><p>${environment === 'edge' ? 'Alleen-lezen synthetische demo. Open de lokale Node-app voor eigen scoutingwerk.' : 'Je hebt alleen leesrechten in deze club. Een eigenaar kan je de scoutrol geven om scoutingwerk en imports te wijzigen.'}</p></div>`);
   updateCounts();
 }
-function navigate(next) { if (!viewLabels[next]) return; view = next; render(); if (next === 'import') loadImportJobs(); window.scrollTo({ top: 0, behavior: 'instant' }); }
+function navigate(next) { if (!viewLabels[next] || next === 'account' && !isAuthenticated()) return; if (next !== 'account') accountUI.invite = null; view = next; render(); if (next === 'import') void loadImportJobs(); if (next === 'account') void loadAccount(); window.scrollTo({ top: 0, behavior: 'instant' }); }
 function showDossier(id) {
   const d = buildDossier(catalog.players.find(p => p.id === id), catalog); if (!d) return;
   openPlayerId = id;
@@ -247,6 +393,7 @@ function showDossier(id) {
     <section class="dossier-section"><div class="section-label">${icon('file')}<h3>Bronnen en bewijs</h3></div>${d.evidence.map(e => `<div class="source-row"><strong>${esc(e.locator)}</strong><span>${esc(e.kind === 'counter' ? 'Tegenobservatie' : 'Positieve observatie')}</span><small>Waargenomen ${dates(e.eventAt)} · Beschikbaar ${dates(e.availableAt)}<br>${esc(e.text)}</small></div>`).join('')}<p class="muted-copy">${d.player.synthetic ? 'Dit profiel bevat synthetische softwaretestgegevens.' : 'De aangeleverde broninhoud en rechtenverklaring zijn niet onafhankelijk geverifieerd.'} “Meer bewijs” betekent dat de beschikbare metingen aan een demonstratieregel voldoen. Bronlocators zijn tekst, geen geverifieerde beelden.</p></section>
     <section class="dossier-section"><div class="section-label">${icon('clock')}<h3>Eerdere besluiten</h3></div>${decisions.length ? [...decisions].reverse().map(e => `<div class="source-row"><strong>${esc(ACTION_LABELS[e.action])} · ${esc(REASON_LABELS[e.reason])}</strong><small>${esc(e.note || 'Geen aanvullende notitie')}<br>${esc(new Date(e.at).toLocaleString('nl-NL'))}</small></div>`).join('') : '<p class="muted-copy">Nog niet beoordeeld door deze lokale werkruimte. Geen uitspraak over bekendheid bij andere clubs.</p>'}</section><div class="dialog-footer">Bron: ${esc(d.source.name)} · Peildatum ${dates(d.asOf)}</div>`;
   if (!dossierDialog.open) dossierDialog.showModal();
+  applyAccess();
 }
 function openAction(title, body) {
   document.querySelector('#action-content').innerHTML = `<div class="dialog-top"><h2 id="action-title">${esc(title)}</h2><button class="icon-button" data-close="action" aria-label="Dialoog sluiten">${icon('close')}</button></div>${body}`;
@@ -262,7 +409,8 @@ function applyFiltersFromControl(el) {
 main.addEventListener('input', event => { if (event.target.matches('input[type="search"][data-filter]')) applyFiltersFromControl(event.target); });
 document.addEventListener('change', event => {
   const el = event.target;
-  if (el.id === 'dataset-select') { selectDataset(el.value).catch(error => { updateCounts(); notify(error.message, true); }); return; }
+  if (el.id === 'organization-select') { selectOrganization(el.value).catch(error => { if (!error.stale) notify(error.message, true); }); return; }
+  if (el.id === 'dataset-select') { selectDataset(el.value).catch(error => { if (!error.stale) { updateCounts(); notify(error.message, true); } }); return; }
   if (el.id === 'import-file') { previewFile(el.files?.[0]); return; }
   if (el.matches('[data-filter]') && el.type !== 'search') applyFiltersFromControl(el);
   if (el.dataset.compare) {
@@ -272,16 +420,42 @@ document.addEventListener('change', event => {
   }
 });
 document.addEventListener('click', async event => {
-  const el = event.target.closest('button, a.brand'); if (!el) return;
+  const el = event.target.closest('button, a.brand'); if (!el || el.disabled) return;
+  const ctx = context();
   try {
+    if (el.dataset.action === 'session-retry') { environment = 'checking'; authError = ''; render(); await checkSession({ reload: true }); return; }
+    if (el.dataset.action === 'workspace-retry') { await selectDataset(dataset, { remember: false }); return; }
+    if (el.dataset.action === 'auth-mode') { authMode = el.dataset.mode; authError = ''; render(); return; }
+    if (el.dataset.action === 'logout') {
+      el.disabled = true;
+      try { await api('/api/auth/logout', { method: 'POST', data: {} }); loseSession(''); authError = ''; await checkSession(); }
+      catch (error) { if (!error.stale) { loseSession(''); environment = 'unavailable'; authError = `Het scherm is vergrendeld. Afmelden bij de server is niet bevestigd: ${error.message}`; render(); } }
+      return;
+    }
+    if (el.dataset.action === 'account-refresh') { await checkSession(); await loadAccount(); return; }
+    if (el.dataset.action === 'recover-migration') {
+      if (membership()?.role !== 'owner') throw new Error('Alleen een eigenaar kan de eerdere opslag herstellen.');
+      el.disabled = true;
+      try {
+        await api('/api/auth/recover-migration', { method: 'POST', data: {} }); assertContext(ctx);
+        await checkSession({ reload: true }); await loadAccount();
+        accountUI.migrationMessage = 'De overname is voltooid. De eerdere scoutinggegevens zijn beschikbaar en het oorspronkelijke bestand is behouden.'; render();
+      } catch (error) {
+        if (!error.stale && ctx.epoch === epoch) { accountUI.migrationMessage = `Herstel nog niet voltooid: ${error.message}`; render(); }
+        else throw error;
+      }
+      return;
+    }
+    if (el.dataset.removeMember) { if (membership()?.role !== 'owner') throw new Error('Alleen een eigenaar beheert clubleden.'); openAction('Clublid verwijderen', `<form id="remove-member-form" data-user="${esc(el.dataset.removeMember)}"><p class="muted-copy">Verwijder de toegang van ${esc(el.dataset.memberName)} tot ${esc(membership().name)}. De bestaande scoutinggeschiedenis blijft bewaard. De laatste eigenaar kan niet worden verwijderd.</p><button class="button primary" type="submit">Verwijder toegang tot deze club</button></form>`); return; }
+    if ((el.dataset.save || el.dataset.task || el.dataset.importRetry || el.dataset.importRollback || ['create-task', 'decision'].includes(el.dataset.action)) && !canWrite()) throw new Error('Je hebt alleen leesrechten in deze club.');
     if (el.matches('a.brand')) { event.preventDefault(); return navigate('radar'); }
     if (el.dataset.close) { (el.dataset.close === 'dossier' ? dossierDialog : actionDialog).close(); return; }
     if (el.dataset.view) return navigate(el.dataset.view);
     if (el.dataset.importRetry) {
       importUI.busy = true; el.disabled = true;
       try { await request(`/api/import/jobs/${encodeURIComponent(el.dataset.importRetry)}/retry`, 'POST', {}); await loadImportJobs(); notify('Nieuwe poging geregistreerd. Volg de werkelijke taakstatus hieronder.'); }
-      catch (error) { importUI.jobsError = error.message; throw error; }
-      finally { importUI.busy = false; renderImportJobs(); }
+      catch (error) { if (ctx.epoch === epoch && !error.stale) importUI.jobsError = error.message; throw error; }
+      finally { if (ctx.epoch === epoch) { importUI.busy = false; renderImportJobs(); applyAccess(); } }
       return;
     }
     if (el.dataset.importRollback) {
@@ -329,13 +503,47 @@ document.addEventListener('click', async event => {
       const rows = [['Competitie', d => d.competition.name], ['Rol', d => ROLE_LABELS[d.player.role]], ['Leeftijd', d => `${d.age} jaar`], ['Minuten', d => fmt(d.minutes, 0)], ['Rolmeting', d => `${d.roleMetric.label}: ${metric(d)}`], ['Bewijsroute', d => d.quality === 'documented' ? 'Meer bewijs' : 'Verkenning'], ['Ontbrekend', d => d.gaps[0]], ['Volgende vraag', d => d.nextQuestion]];
       openAction('Vergelijk bewijs, niet een talentscore', `<p class="form-note">${esc(datasetLabel())}. De statistieken zijn niet gecorrigeerd voor verschillen tussen competities of rollen.</p><div class="table-scroll"><table class="compare-table"><thead><tr><th>Onderdeel</th>${ds.map(d => `<th>${esc(d.player.name)}</th>`).join('')}</tr></thead><tbody>${rows.map(([label, get]) => `<tr><th>${label}</th>${ds.map(d => `<td>${esc(get(d))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`); return;
     }
-  } catch (error) { notify(error.message || 'Actie mislukt.', true); } finally { if (el.isConnected) el.disabled = false; }
+  } catch (error) { if (!error.stale) notify(error.message || 'Actie mislukt.', true); } finally { if (el.isConnected) el.disabled = false; applyAccess(); }
+});
+document.addEventListener('submit', async event => {
+  const form = event.target;
+  if (!['auth-form', 'organization-form', 'password-form', 'invite-form', 'remove-member-form'].includes(form.id) && !form.matches('.member-role-form')) return;
+  event.preventDefault();
+  const submit = form.querySelector('[type="submit"]'); if (submit.disabled) return; submit.disabled = true;
+  const ctx = context(), data = Object.fromEntries(new FormData(form));
+  try {
+    if (form.id === 'auth-form') {
+      authBusy = true; authError = '';
+      await api(`/api/auth/${form.dataset.mode}`, { method: 'POST', data, publicRequest: true }); assertContext(ctx);
+      form.reset(); authBusy = false; view = 'radar'; await checkSession({ reload: true }); return;
+    }
+    if (!isAuthenticated()) throw new Error('Meld je opnieuw aan.');
+    if (form.id === 'organization-form') {
+      const result = await api('/api/auth/organizations', { method: 'POST', data }); assertContext(ctx); form.reset();
+      const id = result.organization?.id || result.id; if (id) organizationId = id;
+      await checkSession({ reload: true }); notify('Nieuwe clubwerkruimte aangemaakt.'); return;
+    }
+    if (form.id === 'password-form') {
+      await api('/api/auth/password', { method: 'POST', data }); assertContext(ctx); form.reset(); await checkSession({ reload: true }); notify('Wachtwoord gewijzigd. Andere sessies zijn afgesloten.'); return;
+    }
+    if (membership()?.role !== 'owner') throw new Error('Alleen een eigenaar beheert clubleden.');
+    if (form.id === 'invite-form') { const invite = await api('/api/auth/invites', { method: 'POST', data }); assertContext(ctx); accountUI.invite = invite; render(); document.querySelector('#invite-code')?.focus(); return; }
+    if (form.matches('.member-role-form')) { await api(`/api/auth/members/${encodeURIComponent(form.dataset.user)}`, { method: 'PATCH', data }); assertContext(ctx); await checkSession({ reload: true }); await loadAccount(); notify('Rol gewijzigd.'); return; }
+    if (form.id === 'remove-member-form') { await api(`/api/auth/members/${encodeURIComponent(form.dataset.user)}`, { method: 'DELETE', data: {} }); assertContext(ctx); actionDialog.close(); await checkSession({ reload: true }); await loadAccount(); notify('Clubtoegang verwijderd.'); }
+  } catch (error) {
+    if (!error.stale && ctx.epoch === epoch) {
+      if (form.id === 'auth-form') { authError = error.message; const box = document.querySelector('#auth-error'); if (box) { box.textContent = authError; box.hidden = false; } }
+      else notify(error.message || 'Wijzigen mislukt.', true);
+    }
+  } finally { authBusy = false; if (submit.isConnected) submit.disabled = false; }
 });
 document.addEventListener('submit', async event => {
   const form = event.target; if (!['brief-form', 'create-task-form', 'task-result-form', 'decision-form', 'import-confirm-form', 'import-rollback-form'].includes(form.id)) return;
-  event.preventDefault(); const submit = form.querySelector('[type="submit"]'); submit.disabled = true;
+  event.preventDefault(); const submit = form.querySelector('[type="submit"]'); if (submit.disabled) return; submit.disabled = true;
+  const ctx = context();
   const data = Object.fromEntries(new FormData(form));
   try {
+    if (!canWrite()) throw new Error('Je hebt alleen leesrechten in deze club.');
     if (form.id === 'import-confirm-form') {
       if (importUI.busy || !importUI.preview?.valid || !form.querySelector('#import-confirm-check').checked) throw new Error('Controleer het bestand en bevestig de importverklaring eerst.');
       importUI.busy = true; importUI.error = '';
@@ -345,8 +553,8 @@ document.addEventListener('submit', async event => {
         importUI.jobs = [result.job, ...importUI.jobs.filter(job => job.id !== result.job.id)];
         await selectDataset('import'); await loadImportJobs();
         notify('Importopdracht geregistreerd. De taakstatus toont of verwerking is geslaagd.');
-      } catch (error) { importUI.error = `${error.message} Kies het bestand opnieuw voor een actuele controle.`; importUI.preview = null; throw error; }
-      finally { importUI.busy = false; if (view === 'import') renderImport(); }
+      } catch (error) { if (ctx.epoch === epoch && !error.stale) { importUI.error = `${error.message} Kies het bestand opnieuw voor een actuele controle.`; importUI.preview = null; } throw error; }
+      finally { if (ctx.epoch === epoch) { importUI.busy = false; if (view === 'import') renderImport(); applyAccess(); } }
       return;
     }
     if (form.id === 'import-rollback-form') {
@@ -356,7 +564,7 @@ document.addEventListener('submit', async event => {
         importUI.rolledBack.add(form.dataset.snapshot); importUI.preview = null;
         await refreshImportCatalog(); await loadImportJobs(); actionDialog.close();
         notify('Rollback bevestigd door de backend. Actieve importcatalogus bijgewerkt.');
-      } finally { importUI.busy = false; if (view === 'import') renderImport(); }
+      } finally { if (ctx.epoch === epoch) { importUI.busy = false; if (view === 'import') renderImport(); applyAccess(); } }
       return;
     }
     if (form.id === 'brief-form') {
@@ -384,21 +592,15 @@ document.addEventListener('submit', async event => {
       await saveDecision(form.dataset.player, data.action, data.reason, data.note.trim()); actionDialog.close(); showDossier(form.dataset.player); render(); notify('Besluit en reden vastgelegd.');
     }
     updateCounts();
-  } catch (error) { notify(error.message || 'Opslaan mislukt.', true); } finally { if (submit.isConnected) submit.disabled = false; }
+  } catch (error) { if (!error.stale) notify(error.message || 'Opslaan mislukt.', true); } finally { if (submit.isConnected) submit.disabled = false; applyAccess(); }
 });
 for (const dialog of [dossierDialog, actionDialog]) dialog.addEventListener('click', event => { if (event.target === dialog) { const r = dialog.getBoundingClientRect(); if (event.clientX < r.left || event.clientX > r.right || event.clientY < r.top || event.clientY > r.bottom) dialog.close(); } });
 document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
 render();
 async function init() {
-  if (!window.OMNI_INLINE && ['http:', 'https:'].includes(location.protocol)) {
-    try {
-      const session = await readJSON('/api/session');
-      if (session.mode === 'local_single_user_demo' && session.csrf) { backend = session; await selectDataset(preferredDataset === 'import' && canImport() ? 'import' : 'demo', { remember: false }); }
-    } catch (error) { if (backend) { workspaceError = error.message; notify(`Lokale gegevens konden niet worden geladen: ${error.message}`, true); } }
-  }
-  datasetLoading = false;
-  if (preferredDataset === 'import' && !canImport()) notify('De bewaarde importkeuze vereist de lokale Node-app. Hier wordt de fictieve demo getoond.');
-  render();
-  updateCounts();
+  if (environment === 'standalone') { catalog = CATALOG; restoreDemo(); datasetLoading = false; render(); return; }
+  await checkSession({ reload: true });
+  sessionCheck = setInterval(() => { if (isAuthenticated() && !datasetLoading && mutationCount === 0 && !authBusy) void checkSession(); }, 45000);
 }
+window.addEventListener('focus', () => { if (isAuthenticated() && !datasetLoading && mutationCount === 0 && !authBusy) void checkSession(); });
 init();

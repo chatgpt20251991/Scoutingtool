@@ -8,6 +8,9 @@ import { ACTION_LABELS, REASON_LABELS, ROLE_LABELS, buildDossier, dossierCSV, fi
 import { createStore, emptyState } from './store.mjs';
 import { MAX_IMPORT_BYTES, emptyImportState, previewImport, rollbackImport, catalogFromImports } from './import/index.mjs';
 import { createImportQueue, coverageRecordsFromCatalog } from './ingestion/index.mjs';
+import { createAccountApp } from './accounts-server.mjs';
+
+const ACCOUNT_CONTEXT = Symbol('authenticated organization request');
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 export const SECURITY_HEADERS = Object.freeze({
@@ -36,21 +39,26 @@ async function body(req, limit = 65536) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) fail(400, 'JSON-object vereist.');
   return data;
 }
-export async function createApp({ statePath = null, catalog: demoCatalog = CATALOG, now = () => new Date().toISOString() } = {}) {
-  const store = await createStore(statePath), csrf = randomBytes(32).toString('hex');
-  const importQueue = await createImportQueue({ store, now });
+export async function createApp(options = {}) {
+  if (options.authRequired === false) return createLegacyApp(options);
+  return createAccountApp({ ...options, legacyFactory: createLegacyApp, contextKey: ACCOUNT_CONTEXT, securityHeaders: SECURITY_HEADERS });
+}
+async function createLegacyApp({ statePath = null, catalog: demoCatalog = CATALOG, now = () => new Date().toISOString(), providedStore, providedQueue } = {}) {
+  const store = providedStore || await createStore(statePath), csrf = randomBytes(32).toString('hex');
+  const importQueue = providedQueue || await createImportQueue({ store, now });
   function dataset(value = 'demo') { if (!['demo', 'import'].includes(value)) fail(400, 'Onbekende dataset.'); return value; }
   function workspace(state, selected, create = false) {
     if (selected === 'demo') return state;
     if (!state.importWorkspace && create) state.importWorkspace = emptyState();
     return state.importWorkspace || emptyState();
   }
-  function audit(state, action, objectId, detail = '') { state.audit.push({ id: randomUUID(), action, objectId, detail, at: new Date().toISOString(), actor: 'local-demo-user' }); }
   const server = http.createServer(async (req, res) => {
+    const context = req[ACCOUNT_CONTEXT];
+    function audit(state, action, objectId, detail = '') { state.audit.push({ id: randomUUID(), action, objectId, detail, at: now(), actor: context?.userId || 'local-demo-user' }); }
     Object.entries(SECURITY_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
     function json(status, data) { res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' }); res.end(JSON.stringify(data)); }
     try {
-      const port = server.address()?.port;
+      const port = context?.port ?? server.address()?.port;
       const validHosts = [`127.0.0.1:${port}`, `localhost:${port}`];
       if (!validHosts.includes(req.headers.host)) fail(403, 'Alleen lokale hostnamen toegestaan.');
       if (req.headers['sec-fetch-site'] === 'cross-site') fail(403, 'Cross-site verzoek geblokkeerd.');
@@ -59,11 +67,12 @@ export async function createApp({ statePath = null, catalog: demoCatalog = CATAL
       if (req.headers.origin && req.headers.origin !== origin) fail(403, 'Onbekende origin.');
       if (!['GET', 'HEAD'].includes(req.method)) {
         const got = String(req.headers['x-omniscout-csrf'] || '');
-        if (!/^[a-f0-9]{64}$/.test(got) || !timingSafeEqual(Buffer.from(got), Buffer.from(csrf))) fail(403, 'Ontbrekend of ongeldig lokaal sessietoken.');
+        if (!/^[a-f0-9]{64}$/.test(got) || !timingSafeEqual(Buffer.from(got), Buffer.from(context?.csrf || csrf))) fail(403, 'Ontbrekend of ongeldig lokaal sessietoken.');
         if (req.headers.origin !== origin) fail(403, 'Lokale origin vereist voor wijzigingen.');
       }
       const selected = dataset(url.searchParams.get('dataset') ?? 'demo');
-      const catalog = selected === 'import' ? catalogFromImports((await store.read()).imports || emptyImportState(), { now: now(), asOf: url.searchParams.get('asOf') || now() }) : demoCatalog;
+      const requestNow = now();
+      const catalog = selected === 'import' ? catalogFromImports((await store.read()).imports || emptyImportState(), { now: requestNow, asOf: url.searchParams.get('asOf') || requestNow }) : demoCatalog;
       if (selected === 'import') catalog.competitions = catalog.competitions.map(competition => ({ ...competition, sourceReportedObservedPlayers: competition.observedPlayers, observedPlayers: catalog.players.filter(p => p.competitionId === competition.id && p.sourceId === competition.sourceId).length }));
       function player(id) { const p = catalog.players.find(x => x.id === id); if (!p || !buildDossier(p, catalog)) fail(404, 'Speler niet beschikbaar.'); return p; }
       function checkDataset(data) { if (dataset(data.dataset ?? selected) !== selected) fail(400, 'Dataset in verzoek en URL komen niet overeen.'); }
@@ -74,7 +83,7 @@ export async function createApp({ statePath = null, catalog: demoCatalog = CATAL
         if (selected === 'import' && workspaceState.decisions.concat(workspaceState.tasks).some(item => !catalog.players.some(p => p.id === item.playerId))) fail(403, 'Export bevat verwijzingen naar niet meer beschikbare importgegevens.');
       }
       const workspaceState = workspace(await store.read(), selected);
-      if (route === '/api/health' && req.method === 'GET') return json(200, { ok: true, mode: 'synthetic_demo', version: '0.2.0', liveSources: 0, productionReady: false });
+      if (route === '/api/health' && req.method === 'GET') return json(200, { ok: true, mode: 'synthetic_demo', version: '0.3.0', liveSources: 0, productionReady: false });
       if (route === '/api/session' && req.method === 'GET') return json(200, { csrf, mode: 'local_single_user_demo', supportsImport: true, persistence: statePath ? 'local_file' : 'memory', notice: 'Geen productie-authenticatie. Gebruik synthetische, niet-vertrouwelijke testgegevens.' });
       if (route === '/api/import/sample' && req.method === 'GET') {
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': 'attachment; filename="omniscout-import-FICTIEF.json"' });
@@ -178,7 +187,8 @@ export async function createApp({ statePath = null, catalog: demoCatalog = CATAL
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   const port = Number(process.env.PORT || 4173);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('PORT moet tussen 1024 en 65535 liggen.');
-  const { server } = await createApp({ statePath: resolve(ROOT, '.local/state.json') });
-  server.listen(port, '127.0.0.1', () => console.log(`\nOmni-Scout 0.2.0 • lokaal prototype\nhttp://127.0.0.1:${port}\nDemo is fictief; importbronverklaringen zijn niet onafhankelijk geverifieerd. Geen live bronnen; geen productie-authenticatie.\nStoppen: Ctrl+C\n`));
-  server.on('error', error => { console.error(`Opstarten mislukt: ${error.message}`); process.exitCode = 1; });
+  const { server, close } = await createApp({ dataDir: resolve(ROOT, '.local'), legacyStatePath: resolve(ROOT, '.local/state.json') });
+  server.listen(port, '127.0.0.1', () => console.log(`\nOmni-Scout 0.3.0 • lokaal prototype\nhttp://127.0.0.1:${port}\nDemo is fictief; importbronverklaringen zijn niet onafhankelijk geverifieerd. Lokale accounts en gescheiden clubs; geen live bronnen of publieke hosting.\nStoppen: Ctrl+C\n`));
+  server.on('error', async error => { console.error(`Opstarten mislukt: ${error.message}`); process.exitCode = 1; await close(); });
+  for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, async () => { await close(); process.exit(0); });
 }

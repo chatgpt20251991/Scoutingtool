@@ -9,7 +9,7 @@
 | `handoff/checks/` | Nieuwe hertests | `npm run verify` en Python unittest daadwerkelijk opnieuw uitgevoerd bij deze overdracht. |
 | `reports/` en referentie-`evidence/` | Oude bewijsbestanden | Behouden oorspronkelijke logs en schermafbeeldingen, inclusief hun testbeperkingen. |
 
-De twee projecten zijn nog NIET samengevoegd. De Node-hoofdapp erft de importmogelijkheden van de referentie-app niet door het naast elkaar plaatsen van bestanden. Dit samenvoegen is een expliciet werkpakket voor Codex.
+De projecten blijven afzonderlijke implementaties. De Node-hoofdapp heeft sinds v0.2 een eigen gecontroleerde import/queue en sinds v0.3 lokale accounts en clubopslag. Python blijft ongewijzigd referentiemateriaal; het eigen Python-importformaat wordt niet automatisch geconverteerd. Nieuwe uitgevoerde bewijsbestanden staan in `reports/v0.3/` en `reports/current/`; de oorspronkelijke bewijsbestanden blijven historische context.
 
 Bij tegenstrijdige historische overdrachtsstatussen geldt `START_HERE_CODEX.md` plus `handoff/TRANSFER_STATUS.json` als nieuwste administratieve status. Productambitie: `docs/BUILD_BRIEF.md` (v2). Eerdere bestanden blijven ongewijzigd zodat context en beperkingen behouden blijven.
 

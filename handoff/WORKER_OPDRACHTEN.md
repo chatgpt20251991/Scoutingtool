@@ -1,6 +1,6 @@
 # Werkpakketten voor ontwikkelworkers
 
-**Uitvoeringsstatus 8 september 2026: afgerond binnen de huidige Codex-sessie.** A, B en C zijn daadwerkelijk als subagents gestart; B heeft daarna het onafhankelijke werkpakket D uitgevoerd. Eén integrator beheerde server, opslag, gedeelde contracten, native browsertests en commits. Bestandsgebieden waren gescheiden binnen één eigen werkbranch. Geen Cloudflare-runtimeworker gestart. De onderstaande oorspronkelijke opdrachten zijn behouden; bewijs staat in `reports/current/`.
+**Uitvoeringsstatus 8 september 2026:** de oorspronkelijke importwerkpakketten zijn afgerond. Voor v0.3 zijn A (accounts), B (organisatieopslag) en C (interface) opnieuw daadwerkelijk als subagents uitgevoerd; B deed daarna D (onafhankelijke accountreview). Eén integrator beheert HTTP-contracten, eindtests en commits. Concrete taaknamen: /root/v03_auth, /root/v03_organizations en /root/v03_ui. Contract: docs/ACCOUNTS_CONTRACT.md; bewijs: reports/v0.3/. Geen Cloudflare-runtimeworker gestart. De oorspronkelijke opdrachten hieronder blijven behouden.
 
 ## Integrator — contracten en oplevering
 

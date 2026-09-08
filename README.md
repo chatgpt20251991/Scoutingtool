@@ -1,61 +1,69 @@
 # Omni-Scout · Scoutingtool
 
-**Versie 0.2.0 — lokaal onderzoeksprototype, 8 september 2026.** Node is het hoofdproject; de volledige eerdere Python-app blijft ongewijzigd onder `reference/python-prototype/`. De oorspronkelijke ZIPs, bouwbrieven, demo's en screenshots zijn behouden.
+**Versie 0.3.0 — lokaal onderzoeksprototype, 8 september 2026.** Node is het hoofdproject; de volledige Python-app blijft ongewijzigd onder `reference/python-prototype/`. Oorspronkelijke ZIPs, bouwbrieven, demo's en screenshots zijn behouden.
 
-De radar bevat 12 fictieve spelers en 8 fictieve competities. De nieuwe, afzonderlijke importdataset begint leeg. Er zijn geen live dataproviders, AI-modellen of productieaccounts aangesloten.
+De radar bevat 12 fictieve spelers en 8 fictieve competities. De afzonderlijke importdataset begint leeg. Er zijn geen live dataproviders, AI-modellen of productieaccounts aangesloten.
 
 ## Starten
 
-Node.js 22+; geen externe npm-afhankelijkheden voor de applicatie.
+Node.js 22+; geen externe npm-afhankelijkheden voor het draaien van de applicatie.
 
 ```sh
 npm start
 ```
 
-Open http://127.0.0.1:4173. Windows: `START_WINDOWS.cmd`. De server luistert uitsluitend op loopback. Gebruik één proces per `.local/state.json`.
+Open http://127.0.0.1:4173. Windows: `START_WINDOWS.cmd`. Maak bij de eerste start je account en eerste club aan. De server luistert uitsluitend op loopback en vergrendelt de gegevensmap voor één proces. Accounts staan in `.local/accounts.json`; iedere club heeft eigen opslag onder `.local/organizations/`.
 
-## Nieuwe lokale import
+## Accounts en clubwerkruimten
 
-Open **Bronimport**, download het synthetische voorbeeld of kies `samples/import-demo.json`, controleer rechten, seizoenen, peildatum, aantallen en waarschuwingen, en bevestig de import. Een geslaagde preview schrijft niets. De lokale queue controleert opnieuw en toont de werkelijke taakstatus. Kies **Lokale import** om de geïmporteerde radar, dossiers, shortlist, vergelijking en onderzoeksopdrachten te gebruiken.
+Kies een club via de clubkiezer. In **Account & club** kun je een nieuwe lege club maken, leden uitnodigen, rollen beheren, opslagstatistieken bekijken en je wachtwoord wijzigen. Een uitnodiging maakt één nieuwe account aan en verloopt na 48 uur. Deel de code zelf; de app verstuurt geen e-mail. `viewer` leest, `scout` verwerkt scoutinggegevens en imports, `owner` beheert ook leden. De laatste eigenaar blijft beschermd.
 
-Demo en import hebben gescheiden catalogi, besluiten, opdrachten en clubvragen. Imports worden uitsluitend in het lokale statebestand opgeslagen; browseropslag bevat geen importdossiers. CSV en JSON-export respecteren afzonderlijke actuele bronrechten. Rollback behoudt snapshots, eerdere provenance en het mutatielog.
+Elke API-aanvraag controleert de sessie en het actuele clublidmaatschap, ook voor exports en jobs. Wachtwoorden worden met scrypt gehasht; sessies gebruiken HttpOnly-cookies en afzonderlijke CSRF-controle. Wachtwoordwijziging trekt alle oude sessies in. Na serverherstart moet iedereen opnieuw aanmelden, terwijl accounts en clubgegevens bewaard blijven. Clubwissel en afmelden wissen eerder geladen clubinhoud uit de interface.
 
-De versie controleert schema's, rechtenverklaringen, timestamps, identiteit, nullwaarden, meetdefinities, seizoenen, snapshots, correcties, idempotentie en opslagfouten. Maximaal 1 MiB per upload, 100 competities, 3000 spelers, 20 actieve jobs, 200 bewaarde jobs en 200 snapshots. Een rechtenverklaring of geldig provider-ID is geen onafhankelijke verificatie.
+Bestaande v0.2-opslag wordt eenmalig naar de eerste club gemigreerd; het oorspronkelijke `.local/state.json` blijft behouden. Bij een fout blijft de claim aan die club gebonden en is gecontroleerd herstel nodig. Lees [accountbeveiliging](docs/AUTH_SECURITY.md) en [opslag, proceslock en migratieherstel](docs/ORGANIZATION_STORAGE.md).
 
-Lees [het importschema](docs/IMPORT_SCHEMA.md), [het API-contract](docs/IMPORT_CONTRACT.md) en [migratie en rollback](docs/MIGRATION_ROLLBACK.md). Het eerdere Python-importformaat wordt niet ongemerkt als hetzelfde schema behandeld.
+## Gecontroleerde lokale import
+
+Open **Bronimport**, download het synthetische voorbeeld of kies `samples/import-demo.json`, controleer rechten, seizoenen, peildatum, aantallen en waarschuwingen, en bevestig. Een geslaagde preview schrijft niets. De lokale queue controleert opnieuw en toont de werkelijke taakstatus. Kies **Lokale import** voor de geïmporteerde radar, dossiers, shortlist, vergelijking en onderzoeksopdrachten.
+
+Iedere club heeft gescheiden demo- en importcatalogi, besluiten, opdrachten en clubvragen. Browseropslag bevat geen accountgegevens, imports of uitnodigingscodes. CSV en JSON-export respecteren afzonderlijke actuele bronrechten. Rollback behoudt snapshots, provenance en het mutatielog.
+
+De versie controleert schema's, rechtenverklaringen, timestamps, identiteit, nullwaarden, meetdefinities, seizoenen, snapshots, correcties, idempotentie en opslagfouten. Maximaal 1 MiB per upload, 100 competities, 3000 spelers, 20 actieve jobs, 200 bewaarde jobs en 200 snapshots per club. Een rechtenverklaring of geldig provider-ID is geen onafhankelijke verificatie.
+
+Lees [het importschema](docs/IMPORT_SCHEMA.md), [het API-contract](docs/IMPORT_CONTRACT.md) en [migratie en rollback](docs/MIGRATION_ROLLBACK.md). Het Python-importformaat wordt niet ongemerkt als hetzelfde schema behandeld.
 
 ## Verificatie
 
 ```sh
 npm ci --ignore-scripts
 npm run verify
+npx playwright install chromium
+npm run test:browser
+npm run test:accounts
+npm run test:offline
+npm run test:cli
 ```
 
-De Python-referentie heeft haar eigen tests, uitgevoerd vanuit `reference/python-prototype/`:
+`tools/browser-accounts.mjs` test de standaard accountserver, twee clubs, rollen, import, onderzoek, CSV, mobiel en herstart. `tools/browser-e2e.mjs` behoudt de uitgebreide importregressie via een expliciet gekozen legacy-testserver. `tools/offline-smoke.mjs` controleert de standalone demo en edge-handler. Playwright is een vastgezette ontwikkelafhankelijkheid. Gebruik desgewenst een aanwezige Edge met `BROWSER_CHANNEL=msedge`; `OMNISCOUT_PLAYWRIGHT_PATH` is een optioneel extern pakketpad.
+
+De Python-referentie heeft eigen tests, uitgevoerd vanuit `reference/python-prototype/`:
 
 ```sh
 python -m unittest discover -s tests -v
 ```
 
-De nieuwe native browserroute staat in `tools/browser-e2e.mjs`: echte browsernavigatie naar de Node-backend, upload, dossier, shortlist, vergelijking, onderzoek, download, herladen, serverherstart, mobiel en rollback. `tools/offline-smoke.mjs` controleert afzonderlijk de standalone demo en de edge-handler. Deze optionele ontwikkelcontroles vereisen Playwright en een beschikbare Chromium-browser; zet zo nodig `OMNISCOUT_PLAYWRIGHT_PATH` naar het Playwright-pakket en `BROWSER_CHANNEL=msedge`.
+Actuele commando's en ruwe resultaten staan in `reports/v0.3/` en `reports/current/`. Oudere bestanden in `reports/`, `handoff/checks/` en Python-`evidence/` zijn historisch bewijs. Het oorspronkelijke `HANDOFF_MANIFEST.json` controleert het invoerpakket; gewijzigde projectbestanden worden na ontwikkeling terecht als gewijzigd gerapporteerd.
 
-```sh
-npm run test:browser
-node tools/offline-smoke.mjs
-```
+## GitHub, ontwikkelworkers en hosting
 
-Actuele uitgevoerde commando's en ruwe resultaten staan in `reports/current/`. Oudere bestanden in `reports/`, `handoff/checks/` en de Python-`evidence/` zijn historisch bewijs. Het oorspronkelijke `HANDOFF_MANIFEST.json` controleert het ongewijzigde invoerpakket; na ontwikkeling worden gewijzigde projectbestanden terecht als gewijzigd gerapporteerd.
+De volledige bronovername is gepubliceerd in [PR #1](https://github.com/chatgpt20251991/Scoutingtool/pull/1), branch `codex/omniscout-accounts`. Publicatie via de gekoppelde GitHub-integratie werkt nu. De v0.2-bronboom in commit `3f54df2fdee7ba285249c86b84846fad0eb4b63e` is exact gelijk aan de eerder geteste lokale bronboom; de bijbehorende GitHub Actions-run is geslaagd. De accountuitbreiding wordt in dezelfde PR aangeleverd. De actuele PR en het eindrapport geven de definitieve commit en CI-status.
 
-## GitHub, werkpakketten en hosting
+A/B/C zijn daadwerkelijk als subagents uitgevoerd; D controleerde de integratie onafhankelijk. Eén integrator beheert gedeelde bestanden en commits. GitHub Actions voert Node-, Python- en native Chromium-browsertests uit en bewaart browserbewijs als artifact.
 
-Doel: `chatgpt20251991/Scoutingtool`, openbaar en bij start leeg. De volledige bronovername is lokaal gecommit; ontwikkeling gebeurt op `codex/omniscout-handoff`. A/B/C zijn daadwerkelijk als subagents uitgevoerd, D als onafhankelijk vervolgwerkpakket; één integrator beheert gedeelde bestanden en commits.
-
-Publicatie blijft geblokkeerd: Git heeft geen bruikbare HTTPS-aanmelding en de gekoppelde GitHub-integratie weigert blob-schrijfacties met HTTP 403 `Resource not accessible by integration`. Er is geen gepubliceerde commit, PR of GitHub Actions-run voor deze levering. De exacte lokale commit wordt na afronding in het eindrapport vermeld.
-
-De bestaande Cloudflare-handler blijft een afzonderlijke alleen-lezen synthetische demo. De lokale edge-handler is getest, maar Wrangler/workerd en deployment zijn niet uitgevoerd. Er zijn geen publieke omgeving, periodieke inzameling, credentials, providerkosten of LLM toegevoegd.
+De Cloudflare-handler blijft een afzonderlijke alleen-lezen synthetische demo. De lokale edge-handler is getest, maar Wrangler/workerd en deployment zijn niet uitgevoerd. Er zijn geen publieke omgeving, periodieke inzameling, credentials, providerkosten of LLM toegevoegd.
 
 ## Productgrenzen
 
 Behoud onzekerheid en tegenbewijs. Null is geen nul. Zonder betrouwbare minuten volgt geen waarde per 90. Niet-aangesloten competities zijn geen talentloze competities. De gedocumenteerde en verkennende lijsten gebruiken uitlegbare demonstratieregels; geen universele talentscore of bewezen voorspelling.
 
-De lokale sessiebeveiliging is geen productieauthenticatie, tenantisolatie of tamper-proof audit. Gebruik synthetische, niet-vertrouwelijke testgegevens. Accounts/organisatiescheiding, retentie, een aantoonbaar toegestane provider en relevante beoordeling blijven afzonderlijke vervolgstappen. Er is nog geen opensourcelicentie namens de eigenaar verleend.
+Accounts en clubscheiding zijn lokaal getest. Publieke TLS-hosting, MFA, wachtwoordherstel, versleutelde back-ups, retentie/verwijdering, externe identiteitscontrole en een onafhankelijke productieaudit ontbreken nog. Gebruik synthetische, niet-vertrouwelijke testgegevens. Bestaande accounts toevoegen aan een andere bestaande club is nog geen afzonderlijke workflow. Er is nog geen opensourcelicentie namens de eigenaar verleend. Het concrete vervolg staat in [NEXT_CODEX_TASK.md](docs/NEXT_CODEX_TASK.md).
