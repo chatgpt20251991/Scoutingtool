@@ -1,0 +1,121 @@
+{
+  "mode": "native_browser_to_account_api_with_synthetic_injected_provider_and_file_standalone",
+  "realExternalProvider": false,
+  "executedAt": "2026-09-08T16:52:44.352Z",
+  "browser": "msedge",
+  "checks": [
+    "Empty account cache is explicit and entering a name makes no upstream request until keyboard search submission",
+    "Explicit selected-ID load renders two adult metadata profiles, explains one exclusion, keeps every measurement unknown and writes no scouting state",
+    "Untrusted names and positions render as inert text; fixed source/revision links, keyboard dossier, local filtering and 390px layout work",
+    "Upstream failure is visible while the dated prior snapshot remains; invalid IDs are rejected without an upstream load or fictitious fallback",
+    "Viewer reads cached profiles and searches; load is disabled in UI and denied by real HTTP 403; missing club context returns 400",
+    "Real backend responses delayed until after navigation, club switch and logout cannot repopulate old profiles; club cache, fields and browser storage remain isolated",
+    "Actual file:// standalone safely embeds mixed-case script-closing source text, opens real-profile view, switches to intact fictive demo and makes zero network requests",
+    "No uncaught browser JavaScript errors across account, viewer, context races and standalone workflows"
+  ],
+  "errors": [],
+  "pageErrors": [],
+  "upstreamCounts": {
+    "searches": 3,
+    "loads": 1
+  },
+  "requestEvidence": [
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles/search",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles/load",
+      "method": "POST",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": true
+    },
+    {
+      "path": "/api/public-profiles/search",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles/search",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles/load",
+      "method": "POST",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": true
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": null,
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "e6b3ea95-f243-4b14-88c1-d9e45ec70a49",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "e6b3ea95-f243-4b14-88c1-d9e45ec70a49",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    },
+    {
+      "path": "/api/public-profiles",
+      "method": "GET",
+      "organization": "371ca13d-98b2-4b43-b74b-bee0200d20cf",
+      "csrfPresent": false
+    }
+  ],
+  "passed": true
+}

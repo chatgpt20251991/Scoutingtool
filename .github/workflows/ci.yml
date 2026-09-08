@@ -6,6 +6,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      OMNISCOUT_REPORT_DIR: reports/v0.5/ci-native
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,6 +25,7 @@ jobs:
       - run: npm run test:browser
       - run: npm run test:accounts
       - run: npm run test:recovery
+      - run: npm run test:profiles
       - run: npm run test:offline
       - uses: actions/upload-artifact@v4
         if: always()
@@ -32,3 +35,4 @@ jobs:
             reports/current/
             reports/v0.3/
             reports/v0.4/
+            reports/v0.5/

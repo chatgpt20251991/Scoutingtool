@@ -1,14 +1,16 @@
-# Architectuur van versie 0.4.0
+# Architectuur van versie 0.5.0
 
 **8 september 2026.** Node.js 22+ is het hoofdproject, met ingebouwde Node-modules en zonder externe npm-afhankelijkheden voor de toepassing. De volledige Python-app blijft ongewijzigd als referentie in `reference/python-prototype/`. De productambitie in `BUILD_BRIEF.md` blijft het langetermijnontwerp; de huidige toepassing is een lokaal onderzoeksprototype met accounts, clubrollen, gescheiden organisaties en gecontroleerde JSON-import.
 
-GitHub-publicatie is hervat: [PR #1](https://github.com/chatgpt20251991/Scoutingtool/pull/1) bestaat, en de gepubliceerde v0.2-commit `3f54df2fdee7ba285249c86b84846fad0eb4b63e` heeft een geslaagde CI-run. V0.3 is gepubliceerd als `54e6dfd6c05b8bb2d35629ec98300902f7af5ceb` met geslaagde CI. V0.4 bouwt verder op `codex/omniscout-recovery`. De integrator rapporteert afzonderlijk de uiteindelijke v0.4-commit, publicatie en uitgevoerde eindtests; de v0.2-CI-uitkomst bewijst die nog niet.
+GitHub-publicatie werkt. PR #1 en #2 zijn na geslaagde controles samengevoegd; main bevat v0.4 op `64d9ea4ef4a819ac5e8b3397d46122b73ea5c32d`. V0.5 voegt de openbare profielbron toe op `codex/omniscout-real-profiles`. De integrator rapporteert de uiteindelijke commit en CI van deze versie afzonderlijk; oudere CI-uitkomsten gelden voor de toenmalige code.
 
 ## Drie uitvoeringsvormen
 
 **Lokale Node-toepassing.** `npm start` start `src/server.mjs` op loopback. Accounts zijn standaard verplicht. `src/accounts-server.mjs` controleert sessie, organisatie, rol, Host, Origin en CSRF voordat het verzoek de scouting-API bereikt. Iedere organisatie krijgt een eigen store en importqueue. Binnen iedere organisatie blijven de fictieve demo en de lokale import afzonderlijke datasets.
 
 **Zelfstandige HTML.** `tools/build-preview.mjs` bundelt vormgeving, fixtures, analyselogica en interface. `window.OMNI_INLINE` voorkomt netwerkgebruik. De zelfstandige demo gebruikt uitsluitend fictieve gegevens en kan demovoorkeuren en demohandelingen in browseropslag of zichtbaar tijdelijk geheugen bewaren. Dit is geen accountserver of opslagplaats voor geïmporteerde clubdossiers. In accountmodus leidt een aanmeldfout niet tot een stille omschakeling naar deze demo.
+
+`tools/build-public-profiles.mjs` gebruikt dezelfde renderer om daarnaast een afzonderlijke, gevalideerde openbare profielkopie in te sluiten. Die HTML opent standaard het scherm Echte spelers en bevat geen verzonnen prestatiecijfers. De opgehaalde JSON en HTML blijven buiten de openbare repository.
 
 **Edge-demo.** `worker/index.mjs` biedt alleen-lezen toegang tot de synthetische catalogus. Servermutaties worden geweigerd. Deze afzonderlijke configuratie bevat geen lokale accounts, clubimport of periodieke inzameling. Cloudflare-deployment is niet uitgevoerd.
 
@@ -47,6 +49,8 @@ De analyseregels zijn voorbeelden, geen gevalideerd voorspelmodel. Null blijft o
 | `src/auth/index.mjs` | Eerste eigenaar, login, scrypt-wachtwoordhashes, sessies, uitnodigingen, organisaties, rollen en begrensde atomaire accountopslag. |
 | `src/accounts-server.mjs` | HTTP-accountgrens, HttpOnly/SameSite-cookie, preauth- en sessie-CSRF, rolcontrole, clubselectie en routering naar de bevoegde clubopslag. |
 | `src/organizations/index.mjs` | Eigen store en queue per gevalideerd organisatie-ID, datamapvergrendeling, eenmalige legacy-overname en gesaneerde opslagstatistieken. |
+| `src/providers/wikidata.mjs` | Begrensde expliciete openbare API, precieze volwassen profielen, bronclaims/revisies en afzonderlijke profielvalidatie. |
+| `tools/standalone.mjs`, `tools/build-public-profiles.mjs` | Veilige zelfstandige HTML zonder externe tekst als script te interpreteren; daadwerkelijke profielkopieën blijven buiten Git. |
 | `src/backup/crypto.mjs` | Begrensde, geauthenticeerde versleuteling van club- en serverback-ups. |
 | `src/backup/workspace.mjs` | Strikte statevalidatie, bronrechten, consistent clubback-upformaat en niet-destructieve retentiepreview. |
 | `src/backup/server.mjs`, `tools/server-backup.mjs` | Offline servermanifest, versleutelde volledige actieve opslag en herstel naar een nieuwe datamap. |
@@ -95,6 +99,8 @@ Sessies bestaan uitsluitend in procesgeheugen en verlopen na maximaal 12 uur. Wa
 | GET / DELETE | `/api/auth/invitations`, `/api/auth/invitations/:id` | Eigenaar bekijkt of trekt openstaande uitnodigingen in. |
 | POST | `/api/backup/create`, `/api/backup/preview`, `/api/backup/restore` | Eigenaar; clubgebonden versleutelde back-up en eenmalige bevestigde herstelpreview. |
 | GET | `/api/retention/preview` | Eigenaar; bewaarinventarisatie zonder writes of verwijderen. |
+| GET | `/api/public-profiles`, `/api/public-profiles/search` | Bevoegd clublid leest eigen tijdelijke bronkopie of zoekt expliciet op Wikidata. |
+| POST | `/api/public-profiles/load` | Scout/eigenaar haalt 1–10 openbare Q-ID’s op, met herautorisatie vóór cachewrite. |
 | GET | `/api/workspace/stats` | Bevoegd clublid; aantallen, grenzen en opslagmodus zonder dossierinhoud. |
 | GET | `/api/import/sample` | Publiek fictief voorbeeld. |
 | POST | `/api/import/preview`, `/api/import/confirm`, `/api/import/rollback` | Scout/eigenaar van de gekozen club. |
@@ -110,4 +116,4 @@ Beschermde scoutingroutes vereisen zowel een geldige sessiecookie als een organi
 
 Publieke productieauthenticatie, TLS-hosting, MFA, externe identiteitscontrole, wachtwoordherstel, een gedeelde database voor meerdere serverprocessen, operationele externe back-upopslag en daadwerkelijk retentie-/verwijderbeleid, tamper-proof auditing en onafhankelijke beveiligingsbeoordeling blijven vervolgwerk.
 
-Ook echte providers, geautomatiseerde broninzameling, objectopslag, videotracking, LLM-gebruik, monitoring/incidentafhandeling, kostenbeheer, betalingen, beoordeelde commerciële datarechten en prospectieve scoutingvalidatie zijn niet aangesloten. De ambitie blijft wereldwijd bruikbare onderzoeksaanleidingen zichtbaar maken, inclusief lagere en amateurdivisies, met aantoonbare dekking en menselijke beoordeling. De concrete volgende bouwstappen staan in `NEXT_CODEX_TASK.md`.
+Wikidata is uitsluitend voor openbare profielen aangesloten. Wedstrijdproviders, geautomatiseerde broninzameling, objectopslag, videotracking, LLM-gebruik, monitoring/incidentafhandeling, kostenbeheer, betalingen, beoordeelde commerciële datarechten en prospectieve scoutingvalidatie zijn niet aangesloten. De ambitie blijft wereldwijd bruikbare onderzoeksaanleidingen zichtbaar maken, inclusief lagere en amateurdivisies, met aantoonbare dekking en menselijke beoordeling. De concrete volgende bouwstappen staan in `NEXT_CODEX_TASK.md`.

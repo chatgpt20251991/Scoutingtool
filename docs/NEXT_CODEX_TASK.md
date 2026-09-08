@@ -1,29 +1,25 @@
-# Volgende ontwikkelstap na back-up en gecontroleerd herstel
+# Volgende ontwikkelstap na echte openbare profielen
 
-**8 september 2026 · richting na v0.4.** Node blijft het hoofdproject; de oorspronkelijke Python-referentie, archieven en bijlagen blijven behouden. Lokale accounts, clubscheiding, import, bestaande-accountuitnodigingen, versleutelde club-/serverback-ups, herstelproeven en een bewaarinventarisatie zijn gebouwd. Bewijs staat in `reports/v0.4/`; PR en opleverrapport leggen de definitieve commit en CI vast.
+**8 september 2026 · na v0.5.** De Node-app kan nu echte volwassen voetbalprofielen bij Wikidata zoeken en ophalen. De aparte profielweergave en gegenereerde offline HTML hebben bronrevisies, expliciete onbekenden en geen fictieve prestatiecijfers. De oorspronkelijke Python-bronnen blijven behouden. Actueel bewijs staat in `reports/v0.5/`.
 
-## Herstelbeheer en verantwoord verwijderen
+## Wedstrijddata als eerstvolgende productstap
 
-Clubherstel gebruikt een eenmalige preview en bewaart de vorige state privé, maximaal tien kopieën. Een volle herstelmap blokkeert verdere herstelpogingen. Het beheercommando herstelt actieve accounts en clubs uitsluitend naar een nieuwe datamap. Sessies, uitnodigingen, oorspronkelijke legacy-bestanden en oude herstelkopieën zijn expliciet uitgesloten.
+Voor minuten, wedstrijden, recente clubs, competitie-/seizoensdekking en gemeten prestaties is een passende voetbalbron nodig. De eigenaar moet de concrete provider of toegestane export aangeven; een naam-/profielbron bewijst die cijfers niet. Gebruik alleen de daadwerkelijk toegestane toegang en beoordeel rechten, kosten, verwerking, retentie en publieke/private presentatie.
 
-Werk verder aan gecontroleerd beheer van oude herstelkopieën, externe opslag van versleutelde back-ups en operationele herstelproeven. Maak zichtbaar welke kopie bij welke vervanging hoort, zonder dossierinhoud aan onbevoegden te tonen. Behoud een bruikbare terugweg. Synthetische tests vervangen geen operationele oefening.
+Bouw daarna een gerichte adapter tegen het bestaande importschema. Leg meetdefinities en tijdsvensters vast, behoud nullwaarden, provenance en afzonderlijke provider-ID's. Test correcties, tegenstrijdige identiteiten, deadlines, rate limits, bronrechtenverval, ontbrekende gegevens en atomische verwerking. Een Wikidata-QID mag niet automatisch op naam aan een andere provider worden gekoppeld. Voeg geen universele talentscore of onbewezen clubfit toe.
 
-De bewaarinventarisatie verwijdert niets. Ontwerp daadwerkelijke verwijdering met vastgelegde termijnen per bron en gegevenssoort, actieve afhankelijkheden, correctieprovenance, grondslagen en beheerbevoegdheden. Toon een concreet plan en vereis expliciete bevestiging; test gedeeltelijke fouten, herhaling, gelijktijdige wijzigingen en herstart. Verlopen rechten of ouderdom alleen zijn geen juridische conclusie. Een opslaglimiet is geen verwijderbeleid.
+De eerste echte profielen zijn een verbindingstest met expliciet gekozen bekende spelers. Dit is geen selectie van verborgen talent, dekking van alle landen of complete lagere-divisieradar. Voor die ambitie moeten concrete bronnen en competities aantoonbaar worden aangesloten.
 
-## Productieauthenticatie en hosting
+## Van profiel naar onderzoekswerk
 
-Leg hostingdoel, toegestane gegevens, beheerrollen en operationele verantwoordelijkheden vast. Beoordeel een identiteitsprovider of passend accountmodel, TLS, MFA, veilige account-/wachtwoordherstelstromen, sessie-intrekking over processen, transactionele opslag, monitoring en onafhankelijke beveiligingsreview. Verwijder niet eenvoudig de loopbackgrens van de lokale server.
+Het openbare scherm is nu alleen-lezen; zijn tijdelijke cache hoort niet bij clubback-ups. Ontwerp bewust hoe een scout een gecontroleerde bronidentiteit vastlegt als onderzoekskandidaat zonder onbetrouwbare actuele club-, competitie- of prestatievelden te verzinnen. Houd originele revisies en menselijke beoordeling naast elkaar. Voeg daarvoor een expliciet opslag-/importcontract en back-up-/rechtenregels toe.
 
-Actieve lokale state en vorige-statekopieën hebben bestandstoegangsbescherming, geen schijfversleuteling. Download- en serverback-ups hebben een eigen wachtzin; een verloren wachtzin kan de app niet terughalen. Voeg geen verborgen standaardaccount of universeel noodwachtwoord toe.
+## Operationeel en publiek gebruik
 
-## Concrete dataprovider en scoutingwaarde
+Bestaande back-ups, gecontroleerd herstel en bewaarinventarisatie blijven aanwezig. Beheer van tien private herstelkopieën, externe back-upopslag, operationele herstelproeven en daadwerkelijke retentieverwijdering zijn nog vervolgwerk. De bewaarinventarisatie verwijdert niets.
 
-Voor aansluiting ontbreekt nog een concrete providerkeuze van de eigenaar. Leg bron, gebruiksrechten, doeleinden, dekking, bewaartermijnen, configuratie en eventuele kosten vast. Gebruik daarna de bestaande adaptergrens en toegestane voorbeelddata, met gecontroleerde import, tijdsvelden, identiteit en afzonderlijke demo/importdatasets. Geen ongeautoriseerde scraping, betaald gebruik of live provider-/LLM-aanroep.
+Leg vóór publieke hosting het doel, toegestane gegevens, beheerrollen en verantwoordelijkheden vast. TLS, MFA, veilig wachtwoordherstel, transactionele opslag, monitoring en onafhankelijke beveiligingsreview zijn nog nodig. De loopbackgrens wordt niet simpelweg verwijderd. Actieve schijfgegevens en lokale vorige-statekopieën zijn niet door de app versleuteld.
 
-De ambitie blijft wereldwijd verborgen talent zichtbaar maken, inclusief lagere, regionale en amateurdivisies. Breid aantoonbare dekking uit; fictieve profielen blijven fictief en een niet aangesloten competitie betekent geen gebrek aan talent. Onderzoek prospectief en onafhankelijk of onderzoeksacties meer waarde opleveren. Voeg geen universele talentscore of ongevalideerde wereldranglijst toe.
+## Oplevering
 
-## Werkverdeling en oplevering
-
-Verdeel onafhankelijke werkzaamheden in opslag/herstelbeheer, retentiemodel, provideradapter, interface en integratiecontrole. Eén integrator beheert contracten en commits. Gebruik beschikbare workers met afzonderlijke bestanden; een opdrachtbestand is geen gestarte taak.
-
-Controleer de remote vóór publicatie, behoud andermans werk en gebruik geen force-push. Rapporteer afzonderlijk code, uitgevoerde tests, commit/PR/CI, afhankelijkheden en deployment. Dit document start geen hosting, providerverwerking, terugkerende taak of betaald gebruik.
+Behoud de bestaande code, voer relevante tests werkelijk uit en leg raw logs vast. Gebruik onafhankelijke workers met afgesproken bestanden. Publiceer alleen synthetische tests en broncode, geen opgehaalde profielbestanden, accounts of clubdossiers. Rapporteer de werkelijke commit, PR/merge en CI, bronophalingen, resterende afhankelijkheden en deployment afzonderlijk. Dit document start geen betaalde bron, publieke omgeving of geplande inzameling.

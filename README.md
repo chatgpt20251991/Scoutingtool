@@ -1,8 +1,8 @@
 # Omni-Scout · Scoutingtool
 
-**Versie 0.4.0 — lokaal onderzoeksprototype, 8 september 2026.** Node is het hoofdproject; de volledige Python-app blijft ongewijzigd onder `reference/python-prototype/`. Oorspronkelijke ZIPs, bouwbrieven, demo's en screenshots zijn behouden.
+**Versie 0.5.0 — lokaal onderzoeksprototype, 8 september 2026.** Node is het hoofdproject; de volledige Python-app blijft ongewijzigd onder `reference/python-prototype/`. Oorspronkelijke ZIPs, bouwbrieven, demo's en screenshots zijn behouden.
 
-De radar bevat 12 fictieve spelers en 8 fictieve competities. De afzonderlijke importdataset begint leeg. Er zijn geen live dataproviders, AI-modellen of productieaccounts aangesloten.
+De radar bevat 12 fictieve spelers en 8 fictieve competities. De afzonderlijke importdataset begint leeg. Via **Echte spelers** kun je nu expliciet openbare Wikidata-profielen zoeken en ophalen. Dit zijn echte brongegevens, met revisies en onbekende wedstrijdstatistieken. Er is geen live wedstrijdfeed of AI-model aangesloten.
 
 ## Starten
 
@@ -30,6 +30,23 @@ De bewaarinventarisatie toont oudere gegevens, actieve afhankelijkheden, wachten
 
 Voor een volledige serverkopie is er een afzonderlijk beheercommando voor een gestopte server. Dit bevat accounts en clubgegevens en herstelt uitsluitend naar een nieuwe datamap; sessies en uitnodigingen worden niet hersteld. Lees [clubherstel](docs/WORKSPACE_RECOVERY.md), [versleuteling](docs/BACKUP_ENCRYPTION.md) en [serverback-up en herstelcommando's](docs/SERVER_BACKUP.md).
 
+## Echte spelers via Wikidata
+
+Kies **Echte spelers**, zoek een naam, controleer het Q-ID en haal maximaal tien geselecteerde profielen op. De app controleert of de bron een volwassen voetballer met een precieze, onbetwiste geboortedatum beschrijft. Gelijknamige items blijven afzonderlijk. Een scout/eigenaar haalt op; een lezer kan zoeken en de eerder opgehaalde momentopname bekijken.
+
+Deze aparte weergave bevat naam, geboortedatum, vermelde posities, gedateerde teamclaims en revisielinks. Een teamclaim bewijst geen huidige club. Minuten, wedstrijden, actuele competitie en gemeten prestaties blijven onbekend. Er wordt geen demonstratiescore aan echte personen gekoppeld. De tijdelijke bronkopie blijft binnen de gekozen clubcontext in procesgeheugen en verdwijnt bij serverherstart.
+
+Wikidata structurele data worden onder CC0 aangeboden. Alleen na een expliciete actie wordt de vaste openbare API benaderd; accounts, clubnotities en dossiers worden niet meegestuurd. Afbeeldingen of externe bronpagina's worden niet opgehaald. Lees [bronkeuzes, grenzen en CLI](docs/WIKIDATA_PROVIDER.md).
+
+Voor een zelfstandige HTML met echte brongegevens:
+
+```sh
+node tools/fetch-public-profiles.mjs --ids Q615,Q11571 --output /pad/buiten/git/profielen.json
+node tools/build-public-profiles.mjs --input /pad/buiten/git/profielen.json --output /pad/buiten/git/echte-spelers.html
+```
+
+Gebruik nieuwe bestanden in een bestaande uitvoermap. De HTML toont een vaste momentopname en kan offline worden geopend. De oorspronkelijke `OmniScout-preview.html` blijft de fictieve demonstratie; de nieuwe CLI genereert een apart bestand met echte profielen. Opgehaalde persoonsgegevens worden buiten de openbare Git-repository bewaard. Dit is nog geen import in de scoutingdataset.
+
 ## Gecontroleerde lokale import
 
 Open **Bronimport**, download het synthetische voorbeeld of kies `samples/import-demo.json`, controleer rechten, seizoenen, peildatum, aantallen en waarschuwingen, en bevestig. Een geslaagde preview schrijft niets. De lokale queue controleert opnieuw en toont de werkelijke taakstatus. Kies **Lokale import** voor de geïmporteerde radar, dossiers, shortlist, vergelijking en onderzoeksopdrachten.
@@ -49,6 +66,7 @@ npx playwright install chromium
 npm run test:browser
 npm run test:accounts
 npm run test:recovery
+npm run test:profiles
 npm run test:offline
 npm run test:cli
 ```
@@ -61,18 +79,18 @@ De Python-referentie heeft eigen tests, uitgevoerd vanuit `reference/python-prot
 python -m unittest discover -s tests -v
 ```
 
-Actuele commando's en ruwe resultaten staan in `reports/v0.4/`. Eerder bewijs blijft in `reports/v0.3/` en `reports/current/` bewaard. Oudere bestanden in `reports/`, `handoff/checks/` en Python-`evidence/` zijn historisch bewijs. Het oorspronkelijke `HANDOFF_MANIFEST.json` controleert het invoerpakket; gewijzigde projectbestanden worden na ontwikkeling terecht als gewijzigd gerapporteerd.
+Actuele commando's en ruwe resultaten staan in `reports/v0.5/`. Eerder bewijs blijft in `reports/v0.3/` en `reports/current/` bewaard. Oudere bestanden in `reports/`, `handoff/checks/` en Python-`evidence/` zijn historisch bewijs. Het oorspronkelijke `HANDOFF_MANIFEST.json` controleert het invoerpakket; gewijzigde projectbestanden worden na ontwikkeling terecht als gewijzigd gerapporteerd.
 
 ## GitHub, ontwikkelworkers en hosting
 
-De volledige bronovername is gepubliceerd in [PR #1](https://github.com/chatgpt20251991/Scoutingtool/pull/1), branch `codex/omniscout-accounts`. Publicatie via de gekoppelde GitHub-integratie werkt nu. De v0.2-bronboom in commit `3f54df2fdee7ba285249c86b84846fad0eb4b63e` is exact gelijk aan de eerder geteste lokale bronboom; de bijbehorende GitHub Actions-run is geslaagd. V0.3 is gepubliceerd als commit `54e6dfd6c05b8bb2d35629ec98300902f7af5ceb` met geslaagde CI. V0.4 bouwt hierop voort op `codex/omniscout-recovery`. De actuele PR en het eindrapport geven de definitieve commit en CI-status.
+De volledige bronovername is gepubliceerd in [PR #1](https://github.com/chatgpt20251991/Scoutingtool/pull/1), branch `codex/omniscout-accounts`. Publicatie via de gekoppelde GitHub-integratie werkt nu. De v0.2-bronboom in commit `3f54df2fdee7ba285249c86b84846fad0eb4b63e` is exact gelijk aan de eerder geteste lokale bronboom; de bijbehorende GitHub Actions-run is geslaagd. V0.3 is gepubliceerd als commit `54e6dfd6c05b8bb2d35629ec98300902f7af5ceb` met geslaagde CI. PR #1 en #2 zijn op verzoek samengevoegd: main bevat v0.4 in commit `64d9ea4ef4a819ac5e8b3397d46122b73ea5c32d`. V0.5 bouwt verder op `codex/omniscout-real-profiles`. De actuele PR en het eindrapport geven de definitieve commit en CI-status.
 
 A/B/C zijn daadwerkelijk als subagents uitgevoerd; D controleerde de integratie onafhankelijk. Eén integrator beheert gedeelde bestanden en commits. GitHub Actions voert Node-, Python- en native Chromium-browsertests uit en bewaart browserbewijs als artifact.
 
-De Cloudflare-handler blijft een afzonderlijke alleen-lezen synthetische demo. De lokale edge-handler is getest, maar Wrangler/workerd en deployment zijn niet uitgevoerd. Er zijn geen publieke omgeving, periodieke inzameling, credentials, providerkosten of LLM toegevoegd.
+De Cloudflare-handler blijft een afzonderlijke alleen-lezen synthetische demo. De lokale edge-handler is getest, maar Wrangler/workerd en deployment zijn niet uitgevoerd. De Wikidata-aansluiting doet alleen expliciete openbare profielaanvragen. Er zijn geen publieke omgeving, periodieke inzameling, credentials, providerkosten of LLM toegevoegd.
 
 ## Productgrenzen
 
 Behoud onzekerheid en tegenbewijs. Null is geen nul. Zonder betrouwbare minuten volgt geen waarde per 90. Niet-aangesloten competities zijn geen talentloze competities. De gedocumenteerde en verkennende lijsten gebruiken uitlegbare demonstratieregels; geen universele talentscore of bewezen voorspelling.
 
-Accounts en clubscheiding zijn lokaal getest. Publieke TLS-hosting, MFA, wachtwoordherstel, daadwerkelijke retentieverwijdering, externe identiteitscontrole en een onafhankelijke productieaudit ontbreken nog. Actieve schijfgegevens en lokale vorige-statekopieën zijn niet versleuteld; de download- en serverback-ups zijn dat wel. Gebruik synthetische, niet-vertrouwelijke testgegevens. Er is nog geen opensourcelicentie namens de eigenaar verleend. Het concrete vervolg staat in [NEXT_CODEX_TASK.md](docs/NEXT_CODEX_TASK.md).
+Accounts en clubscheiding zijn lokaal getest. Publieke TLS-hosting, MFA, wachtwoordherstel, daadwerkelijke retentieverwijdering, externe identiteitscontrole en een onafhankelijke productieaudit ontbreken nog. Actieve schijfgegevens en lokale vorige-statekopieën zijn niet versleuteld; de download- en serverback-ups zijn dat wel. De echte profielweergave gebruikt openbare bronclaims; gebruik voor overige ontwikkeling synthetische testgegevens. Er is nog geen opensourcelicentie namens de eigenaar verleend. Het concrete vervolg staat in [NEXT_CODEX_TASK.md](docs/NEXT_CODEX_TASK.md).

@@ -1,0 +1,16 @@
+{
+  "mode": "native_browser_to_loopback_accounts_backend",
+  "executedAt": "2026-09-08T16:54:31.981Z",
+  "browser": "msedge",
+  "checks": [
+    "First-run setup creates owner and club; existing browser notes remain untouched/unused, locked screen hides club data and cookie is HttpOnly",
+    "Authenticated import, dossier, shortlist, research completion and real CSV download use club header and mutation CSRF",
+    "Two club imports reuse snapshot/player IDs without leakage; club switch clears old dossier DOM and separate decisions/tasks",
+    "Real club-A catalog responses deliberately delayed past club switch and logout cannot repopulate another club or signed-out DOM"
+  ],
+  "errors": [
+    "Error: expect(locator).toContainText(expected) failed\n\nLocator: locator('#organization-role')\nExpected substring: \"Alleen lezen\"\nReceived string:    \"\"\nTimeout: 5000ms\n\nCall log:\n  - Expect \"to.have.text\" with timeout 5000ms\n  - waiting for locator('#organization-role')\n    4 × locator resolved to <span id=\"organization-role\"></span>\n      - unexpected value \"\"\n\n    at captureRawStack (C:\\Users\\Han23\\Documents\\Codex\\2026-09-08\\lees-start-here-codex-md-en\\work\\Scoutingtool\\node_modules\\playwright-core\\lib\\coreBundle.js:9681:17)\n    at callMatcherAsStep (C:\\Users\\Han23\\Documents\\Codex\\2026-09-08\\lees-start-here-codex-md-en\\work\\Scoutingtool\\node_modules\\playwright\\lib\\matchers\\expect.js:13310:57)\n    at Object.toContainText (C:\\Users\\Han23\\Documents\\Codex\\2026-09-08\\lees-start-here-codex-md-en\\work\\Scoutingtool\\node_modules\\playwright\\lib\\matchers\\expect.js:13300:23)\n    at C:\\Users\\Han23\\Documents\\Codex\\2026-09-08\\lees-start-here-codex-md-en\\work\\Scoutingtool\\tools\\browser-accounts.mjs:184:54"
+  ],
+  "pageErrors": [],
+  "passed": false
+}

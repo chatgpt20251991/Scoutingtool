@@ -1,0 +1,5 @@
+
+> omniscout-research-radar@0.5.0 test:cli
+> node tools/cli-smoke.mjs
+
+PASS: actual CLI rejects occupied port with exit 1 and releases its data-directory lock

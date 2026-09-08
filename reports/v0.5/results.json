@@ -1,0 +1,71 @@
+{
+  "version": "0.5.0",
+  "date": "2026-09-08",
+  "node": {
+    "tests": 248,
+    "pass": 248,
+    "fail": 0,
+    "skipped": 0,
+    "cancelled": 0
+  },
+  "python": {
+    "passed": 62,
+    "failed": 0
+  },
+  "browser": {
+    "public_profiles": {
+      "passed": 8,
+      "failed": 0,
+      "evidence": "browser-public-profiles.json",
+      "browser": "msedge"
+    },
+    "accounts": {
+      "passed": 12,
+      "failed": 0,
+      "evidence": "regressions/browser-accounts.json",
+      "browser": "msedge"
+    },
+    "recovery": {
+      "passed": 11,
+      "failed": 0,
+      "evidence": "regressions/browser-recovery.json",
+      "browser": "msedge"
+    },
+    "legacy": {
+      "passed": 10,
+      "failed": 0,
+      "evidence": "regressions/browser-e2e.json",
+      "browser": "msedge"
+    },
+    "offline": {
+      "passed": 10,
+      "failed": 0,
+      "evidence": "regressions/offline-smoke.json",
+      "browser": "Playwright Chromium channel msedge, headless"
+    }
+  },
+  "browser_total": 51,
+  "cli_startup": {
+    "passed": 1,
+    "failed": 0
+  },
+  "commands": [
+    "npm run verify",
+    "python -m unittest discover -s tests -v (reference/python-prototype)",
+    "npm run test:cli",
+    "BROWSER_CHANNEL=msedge npm run test:profiles",
+    "BROWSER_CHANNEL=msedge OMNISCOUT_REPORT_DIR=reports/v0.5/regressions npm run test:accounts",
+    "BROWSER_CHANNEL=msedge OMNISCOUT_REPORT_DIR=reports/v0.5/regressions npm run test:recovery",
+    "BROWSER_CHANNEL=msedge OMNISCOUT_REPORT_DIR=reports/v0.5/regressions npm run test:browser",
+    "BROWSER_CHANNEL=msedge OMNISCOUT_REPORT_DIR=reports/v0.5/regressions npm run test:offline"
+  ],
+  "evidence_scope": "Node/provider/browser regression tests use synthetic fixtures and injected upstream responses. Actual externally fetched profile JSON/HTML and six separate browser checks are outside Git in the delivery folder.",
+  "resolved_failures": [
+    "Source review findings fixed: identity mismatch, invalid team intervals/DOB uncertainty, sparse IDs, incomplete batches and bounded deadlines; initial failure log preserved.",
+    "Public browser test initially waited for a hidden dataset selector before organization state was ready; corrected to await actual rows. Initial failure evidence preserved.",
+    "Full verify first had 245/247 pass: decisions and task timestamps ignored the injected clock. Three production timestamps now use now(); a deterministic regression was red before the fix. Initial full run preserved."
+  ],
+  "intermittent_test_observation": "One account browser run executed alongside another browser suite timed out after four checks awaiting the registered viewer role (5s, no page errors). An isolated unchanged rerun passed all 12 checks. Cause not proven; initial failure evidence preserved. No timeout relaxation or production workaround applied.",
+  "deployment": "No public deployment or Cloudflare runtime started",
+  "ci": "Final remote SHA and CI outcome are recorded in the external delivery report and PR."
+}

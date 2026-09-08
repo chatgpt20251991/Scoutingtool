@@ -1,0 +1,22 @@
+{
+  "mode": "native_browser_to_loopback_accounts_backend",
+  "executedAt": "2026-09-08T16:55:45.921Z",
+  "browser": "msedge",
+  "checks": [
+    "First-run setup creates owner and club; existing browser notes remain untouched/unused, locked screen hides club data and cookie is HttpOnly",
+    "Authenticated import, dossier, shortlist, research completion and real CSV download use club header and mutation CSRF",
+    "Two club imports reuse snapshot/player IDs without leakage; club switch clears old dossier DOM and separate decisions/tasks",
+    "Real club-A catalog responses deliberately delayed past club switch and logout cannot repopulate another club or signed-out DOM",
+    "Second browser accepts owner-issued viewer invite; UI disables writes and HTTP rejects missing/other club, viewer writes/members and missing CSRF",
+    "Owner role management changes actual scout/viewer authorization and refreshed UI controls",
+    "Password change invalidates old password; logout removes visible club data; new login restores backend state without secrets/imports in localStorage",
+    "Account/club controls and imported radar fit a 390px mobile viewport",
+    "Real server restart logs out both browsers while accounts, clubs, imports and completed research persist on disk",
+    "Owner removal revokes the other browser club membership immediately; refreshed UI has no old catalog, dossier or club access",
+    "Corrupt legacy setup keeps owner/account/member management reachable; UI retries fail safely, then actual repaired source migrates without source-byte changes",
+    "No uncaught browser page errors in the complete native accounts workflow"
+  ],
+  "errors": [],
+  "pageErrors": [],
+  "passed": true
+}

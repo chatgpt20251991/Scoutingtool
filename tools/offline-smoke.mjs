@@ -13,7 +13,7 @@ const playwrightPackage = process.env.OMNISCOUT_PLAYWRIGHT_PATH || process.env.P
 const { chromium } = require(playwrightPackage);
 const { expect } = require(`${playwrightPackage}/test`);
 const root = fileURLToPath(new URL('../', import.meta.url));
-const reports = resolve(root, 'reports/current');
+const reports = resolve(process.env.OMNISCOUT_REPORT_DIR || resolve(root, 'reports/current'));
 await mkdir(reports, { recursive: true });
 const results = [], pageErrors = [], requests = [];
 let browser, server;

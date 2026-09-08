@@ -55,11 +55,21 @@ const staleError = () => Object.assign(new Error('De werkruimte is intussen gewi
 const context = () => ({ epoch, organizationId });
 function assertContext(ctx) { if (ctx.epoch !== epoch || ctx.organizationId !== organizationId) throw staleError(); }
 const importUI = { payload: null, preview: null, filename: '', error: '', busy: false, sequence: 0, jobs: [], snapshots: [], jobsError: '', jobsLoading: false, rolledBack: new Set() };
+const publicUI = { snapshot: null, supportsFetch: false, stale: false, loading: false, busy: false, error: '', query: '', ids: '', filter: '', results: [], searched: false, sequence: 0, controller: null };
+const publicId = value => typeof value === 'string' && /^Q[1-9][0-9]{0,11}$/.test(value);
+const publicSourceUrl = id => publicId(id) ? `https://www.wikidata.org/wiki/${id}` : null;
+function clearPublicProfiles() {
+  publicUI.controller?.abort();
+  Object.assign(publicUI, { snapshot: null, supportsFetch: false, stale: false, loading: false, busy: false, error: '', query: '', ids: '', filter: '', results: [], searched: false, sequence: publicUI.sequence + 1, controller: null });
+  if (dossierDialog.dataset.publicProfile) { dossierDialog.close(); document.querySelector('#dossier-content').replaceChildren(); delete dossierDialog.dataset.publicProfile; }
+}
+const publicContext = () => ({ ...context(), sequence: publicUI.sequence });
+function assertPublicContext(ctx) { assertContext(ctx); if (ctx.sequence !== publicUI.sequence || view !== 'public-profiles') throw staleError(); }
 let jobsTimer;
-let view = 'radar', filters = { search: '', role: '', region: '', competition: '', quality: '', minAge: 18, maxAge: 23, newOnly: false, lowerOnly: false };
+let view = window.OMNI_INITIAL_VIEW === 'public-profiles' ? 'public-profiles' : 'radar', filters = { search: '', role: '', region: '', competition: '', quality: '', minAge: 18, maxAge: 23, newOnly: false, lowerOnly: false };
 let comparison = new Set(), openPlayerId = null;
 const main = document.querySelector('#main'), dossierDialog = document.querySelector('#dossier-dialog'), actionDialog = document.querySelector('#action-dialog');
-const viewLabels = { radar: 'Wereldradar', tasks: 'Onderzoeksbord', shortlist: 'Shortlist', coverage: 'Datadekking', import: 'Bronimport', brief: 'Clubvraag', log: 'Beslislogboek', account: 'Account & club' };
+const viewLabels = { radar: 'Wereldradar', 'public-profiles': 'Echte spelers', tasks: 'Onderzoeksbord', shortlist: 'Shortlist', coverage: 'Datadekking', import: 'Bronimport', brief: 'Clubvraag', log: 'Beslislogboek', account: 'Account & club' };
 let toastTimeout;
 function notify(message, error = false) { const el = document.querySelector('#toast'); el.textContent = message; el.className = `toast show ${error ? 'error' : ''}`; clearTimeout(toastTimeout); toastTimeout = setTimeout(() => el.classList.remove('show'), 4500); }
 function restoreDemo() { try { const saved = JSON.parse(localStorage.getItem(storageKey) || 'null'); if (saved?.version === 1 && ['decisions', 'tasks', 'audit'].every(key => Array.isArray(saved[key]))) state = saved; demoState = state; } catch { storageWorking = false; } }
@@ -79,14 +89,17 @@ function clearWorkspace() {
   document.querySelector('#toast').textContent = ''; document.querySelector('#toast').className = 'toast';
   Object.assign(importUI, { payload: null, preview: null, filename: '', error: '', busy: false, sequence: importUI.sequence + 1, jobs: [], snapshots: [], jobsError: '', jobsLoading: false, rolledBack: new Set() });
   clearAccountTransient();
+  clearPublicProfiles();
   Object.assign(accountUI, { members: [], invitations: [], invitationsError: '', stats: null, statsError: '', error: '', loading: false, invite: null, migrationRequired: false, migrationMessage: '' });
   main.replaceChildren();
 }
 function loseSession(message = 'Je sessie is verlopen. Meld je opnieuw aan.') {
   clearWorkspace(); clearTimeout(expiryTimer); backend = null; organizationId = ''; environment = 'local_accounts'; datasetLoading = false; authMode = 'login'; authError = message; render();
 }
-async function api(path, { method = 'GET', data, publicRequest = false, raw = false } = {}) {
+async function api(path, { method = 'GET', data, publicRequest = false, raw = false, signal } = {}) {
   const ctx = context(), controller = new AbortController(); requests.add(controller);
+  const abort = () => controller.abort();
+  if (signal?.aborted) abort(); else signal?.addEventListener('abort', abort, { once: true });
   const headers = {};
   if (isAccounts() && organizationId) headers['X-Omniscout-Organization'] = organizationId;
   if (method !== 'GET') { headers['Content-Type'] = 'application/json'; headers['X-Omniscout-CSRF'] = backend?.csrf || ''; }
@@ -101,7 +114,7 @@ async function api(path, { method = 'GET', data, publicRequest = false, raw = fa
     }
     return result;
   } catch (error) { if (error.name === 'AbortError' || ctx.epoch !== epoch) { if (error.status === 401 || error.status === 403) throw error; throw staleError(); } throw error; }
-  finally { requests.delete(controller); }
+  finally { signal?.removeEventListener('abort', abort); requests.delete(controller); }
 }
 async function readJSON(path) { return api(path, { publicRequest: path === '/api/session' || path === '/api/import/sample' }); }
 async function refreshWorkspace(selected = dataset) {
@@ -137,7 +150,7 @@ async function selectDataset(selected, { remember = true } = {}) {
     if (remember) { preferredDataset = selected; try { localStorage.setItem(datasetKey, selected); } catch { /* Never cache imported data. */ } }
     render();
   } catch (error) { if (!error.stale && ctx.epoch === epoch) workspaceError = error.message; throw error; }
-  finally { if (ctx.epoch === epoch) { datasetLoading = false; render(); if (view === 'import') void loadImportJobs(); } }
+  finally { if (ctx.epoch === epoch) { datasetLoading = false; render(); if (view === 'import') void loadImportJobs(); if (view === 'public-profiles') void loadPublicProfiles(); } }
 }
 async function saveDecision(playerId, action, reason, note = '') {
   if (backend) await request('/api/decisions', 'POST', { playerId, action, reason, note });
@@ -152,7 +165,7 @@ function updateCounts() {
   document.body.classList.toggle('auth-locked', locked);
   document.querySelector('#nav').hidden = locked;
   document.querySelector('.demo-banner').hidden = locked;
-  document.querySelector('.dataset-bar').hidden = locked || (isAccounts() && !organizationId);
+  document.querySelector('.dataset-bar').hidden = locked || view === 'public-profiles' || (isAccounts() && !organizationId);
   document.querySelector('#organization-bar').hidden = !isAuthenticated();
   document.querySelector('#nav [data-view="account"]').hidden = !isAuthenticated();
   const orgPicker = document.querySelector('#organization-select');
@@ -166,6 +179,7 @@ function updateCounts() {
   document.querySelector('#task-count').textContent = state.tasks.filter(t => t.status === 'todo').length;
   document.querySelector('#shortlist-count').textContent = catalog.players.filter(p => isShortlisted(p.id)).length;
   document.querySelector('#player-count').textContent = catalog.players.length;
+  document.querySelector('#radar-label').textContent = dataset === 'demo' ? 'Fictieve radar' : 'Importradar';
   document.querySelector('#storage-status').textContent = locked ? 'Geen clubgegevens zichtbaar' : workspaceError ? 'Backendgegevens niet geladen' : backend && environment !== 'edge' ? backend.persistence === 'memory' ? 'Node-backend · tijdelijk geheugen' : 'Lokaal opgeslagen op dit apparaat' : environment === 'edge' ? 'Alleen-lezen synthetische demo' : storageWorking ? 'Preview · browseropslag' : 'Preview · tijdelijk geheugen';
   const picker = document.querySelector('#dataset-select');
   picker.value = dataset; picker.disabled = datasetLoading || mutationCount > 0;
@@ -174,6 +188,13 @@ function updateCounts() {
   document.querySelector('.date-label').textContent = `PEILDATUM ${dates(catalog.asOf)}`;
   document.querySelector('.demo-chip').textContent = dataset === 'demo' ? 'DEMO' : 'IMPORT';
   document.querySelector('.demo-banner p').innerHTML = dataset === 'demo' ? '<strong>Fictieve testomgeving.</strong> Alle spelers, clubs, competities en statistieken zijn voorbeelden. <strong>0 live databronnen.</strong>' : `<strong>${esc(datasetLabel())}.</strong> Bronrechten en inhoud zijn verklaringen van de importeur. Geen live providerverbinding of onafhankelijk geverifieerde scoutingdekking.`;
+  if (view === 'public-profiles') {
+    document.querySelector('.demo-chip').textContent = 'OPENBARE PROFIELEN';
+    document.querySelector('.date-label').textContent = publicUI.snapshot ? `OPGEHAALD ${dates(publicUI.snapshot.retrievedAt)}` : 'NOG GEEN MOMENTOPNAME';
+    document.querySelector('.demo-banner p').innerHTML = '<strong>Echte openbare profielen.</strong> Wikidata-bronclaims onder CC0. Speelminuten, prestaties, huidige club en competitie zijn niet bevestigd. Geen talentscore.';
+    document.querySelector('.demo-banner button').hidden = true;
+    document.querySelector('#storage-status').textContent = publicUI.loading ? 'Openbare momentopname ophalen…' : environment === 'standalone' ? 'Ingebouwde momentopname · alleen lezen' : 'Tijdelijke openbare cache per club';
+  } else document.querySelector('.demo-banner button').hidden = false;
   applyAccess();
 }
 function applyAccess() {
@@ -269,6 +290,54 @@ async function checkSession({ reload = false } = {}) {
     if (reload || selected !== organizationId || oldUser !== next.user.id || oldRole !== next.organizations.find(org => org.id === selected)?.role) await selectOrganization(selected, { remember: false });
     else { datasetLoading = false; updateCounts(); }
   } catch (error) { if (!error.stale && ctx.epoch === epoch) { clearWorkspace(); backend = null; organizationId = ''; environment = 'unavailable'; datasetLoading = false; authError = error.message; render(); } }
+}
+function publicAge(profile, snapshot = publicUI.snapshot) {
+  if (typeof profile?.dob !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(profile.dob)) return null;
+  const born = new Date(`${profile.dob}T00:00:00.000Z`), at = new Date(snapshot?.retrievedAt);
+  if (!Number.isFinite(born.getTime()) || !Number.isFinite(at.getTime()) || born.toISOString().slice(0, 10) !== profile.dob || born > at) return null;
+  return at.getUTCFullYear() - born.getUTCFullYear() - (at.getUTCMonth() < born.getUTCMonth() || (at.getUTCMonth() === born.getUTCMonth() && at.getUTCDate() < born.getUTCDate()) ? 1 : 0);
+}
+function publicProfiles() {
+  return (publicUI.snapshot?.profiles || []).filter(profile => publicId(profile.id) && profile.synthetic === false && typeof profile.name === 'string' && publicAge(profile) >= 18 && publicAge(profile) <= 100);
+}
+function setPublicSnapshot(snapshot) {
+  if (snapshot === null || snapshot === undefined) { publicUI.snapshot = null; return; }
+  if (snapshot.format !== 'omniscout-public-profiles' || snapshot.version !== 1 || snapshot.provider !== 'wikidata' || !Array.isArray(snapshot.profiles) || snapshot.profiles.length > 10 || !Number.isFinite(Date.parse(snapshot.retrievedAt))) throw new Error('De openbare momentopname heeft een ongeldig formaat. Er worden geen vervangende profielen getoond.');
+  publicUI.snapshot = snapshot;
+}
+async function loadPublicProfiles() {
+  clearPublicProfiles();
+  if (view !== 'public-profiles') return;
+  const ctx = publicContext(); publicUI.loading = true; publicUI.controller = new AbortController(); render();
+  try {
+    if (environment === 'standalone' || environment === 'edge') setPublicSnapshot(window.OMNI_PUBLIC_PROFILES || null);
+    else {
+      const result = await api('/api/public-profiles', { signal: publicUI.controller.signal }); assertPublicContext(ctx);
+      setPublicSnapshot(result.snapshot); publicUI.supportsFetch = result.supportsFetch === true; publicUI.stale = result.stale === true;
+    }
+  } catch (error) { if (!error.stale && ctx.epoch === epoch && ctx.sequence === publicUI.sequence) publicUI.error = error.message; }
+  finally { if (ctx.epoch === epoch && ctx.sequence === publicUI.sequence && view === 'public-profiles') { publicUI.loading = false; publicUI.controller = null; render(); } }
+}
+function publicLabels(items) { return Array.isArray(items) ? items.filter(item => publicId(item?.id) && typeof item.label === 'string').map(item => item.label).join(', ') || 'Onbekend' : 'Onbekend'; }
+function renderPublicProfiles() {
+  const snapshot = publicUI.snapshot, profiles = publicProfiles(), q = publicUI.filter.trim().toLocaleLowerCase('nl');
+  const shown = profiles.filter(profile => `${profile.name} ${profile.id} ${publicLabels(profile.positions)}`.toLocaleLowerCase('nl').includes(q));
+  const disabled = publicUI.loading || publicUI.busy ? 'disabled' : '', mayLoad = publicUI.supportsFetch && canWrite();
+  main.innerHTML = heading('WIKIDATA · OPENBARE BRONCLAIMS', 'Echte openbare profielen.', 'Controleer identiteit en broninformatie. Deze profielen bevatten geen gemeten scoutingprestaties.', `<button class="button secondary" data-view="radar">Open ${dataset === 'import' ? 'importradar' : 'fictieve radar'}</button>`) +
+    `<div class="notice-card public-scope"><div><strong>${snapshot ? `${profiles.length} volwassen profielen in deze momentopname` : 'Nog geen openbare profielen geladen'}</strong><p>${environment === 'standalone' ? 'Deze HTML bevat een vaste momentopname. Open de lokale Node-app om opnieuw bij Wikidata op te halen.' : environment === 'edge' ? 'Deze preview haalt geen nieuwe brongegevens op.' : 'Alleen na een expliciete zoek- of ophaalactie wordt Wikidata benaderd. De tijdelijke cache hoort bij de geselecteerde club en verdwijnt bij serverherstart.'} De fictieve radar en eigen scoutinggegevens blijven afzonderlijk.</p></div></div>` +
+    (publicUI.loading ? '<p class="public-status" role="status">Opgeslagen openbare momentopname ophalen…</p>' : '') +
+    (publicUI.stale ? '<p class="public-status" role="status">Deze momentopname is ouder dan één dag. Haal opnieuw op om de nieuwste bronversie te controleren.</p>' : '') +
+    (publicUI.error ? `<p class="import-error" id="public-profile-error" role="alert">${esc(publicUI.error)}</p>` : '') +
+    (publicUI.supportsFetch ? `<section class="panel public-provider-panel"><h2>Haal brongegevens op</h2><form id="public-search-form" class="public-search-form"><label>Zoek een naam op Wikidata<input name="q" type="search" required minlength="2" maxlength="120" value="${esc(publicUI.query)}" placeholder="Typ een naam en kies Zoeken" ${disabled}></label><button class="button secondary" type="submit" ${disabled}>${icon('search')} Zoek op Wikidata</button></form><div id="public-search-results" aria-live="polite">${publicUI.searched ? `<p class="form-note">${publicUI.results.length} zoekresultaten. Identiteit, sport en leeftijd worden pas bij ophalen gecontroleerd.</p>${publicUI.results.length ? publicUI.results.map(result => `<label class="public-search-result"><input type="checkbox" data-public-select="${esc(result.id)}" ${publicUI.ids.split(/[\s,;]+/).includes(result.id) ? 'checked' : ''} ${!mayLoad || disabled ? 'disabled' : ''}><span><strong>${esc(result.label)}</strong><small>${esc(result.id)} · ${esc(result.description || 'Geen beschrijving beschikbaar')}</small></span></label>`).join('') : '<p>Geen resultaten voor deze zoekopdracht.</p>'}` : ''}</div><form id="public-load-form" class="public-load-form"><label>Geselecteerde Wikidata-ID’s (1–10)<input name="ids" required maxlength="250" value="${esc(publicUI.ids)}" placeholder="Bijvoorbeeld Q11571, Q615" ${!mayLoad || disabled ? 'disabled' : ''} aria-describedby="public-load-help"></label><button class="button primary" type="submit" ${!mayLoad || disabled ? 'disabled' : ''}>${icon('arrow')} Haal geselecteerde profielen op</button><p id="public-load-help" class="form-note">Selecteer zoekresultaten of vul exacte Q-ID’s in. Dit vervangt de openbare momentopname in deze club. Minderjarigen en onbekende leeftijden worden uitgesloten.${!canWrite() ? ' Je kunt als lezer zoeken en de cache bekijken; een eigenaar of scout kan een momentopname ophalen.' : ''}</p></form>${publicUI.busy ? '<p class="public-status" role="status">Wikidata-verzoek verwerken…</p>' : ''}</section>` : '') +
+    `<section class="panel public-profiles-panel"><div class="panel-head"><div><h2>Geladen profielen <span class="count-badge">${shown.length}</span></h2><p class="form-note">Alfabetisch op naam. Geen rangschikking op talent.</p></div>${snapshot ? `<span class="status-tag neutral">CC0 · ${esc(dates(snapshot.retrievedAt))}</span>` : ''}</div>${profiles.length ? `<label class="public-filter">Filter deze momentopname<input id="public-filter" type="search" value="${esc(publicUI.filter)}" placeholder="Naam, positie of Q-ID"></label>` : ''}<div id="public-profile-list" class="public-profile-grid">${shown.length ? shown.slice().sort((a, b) => a.name.localeCompare(b.name, 'nl')).map(profile => `<article class="public-profile-card"><span class="eyebrow">OPENBARE BRONCLAIM · ${esc(profile.id)}</span><h3><button data-public-profile="${esc(profile.id)}">${esc(profile.name)}</button></h3><p>${publicAge(profile)} jaar op ophaaldatum · ${esc(publicLabels(profile.positions))}</p><dl class="public-facts"><div><dt>Huidige club</dt><dd>Onbekend</dd></div><div><dt>Competitie</dt><dd>Onbekend</dd></div><div><dt>Speelminuten</dt><dd>Onbekend</dd></div><div><dt>Wedstrijden</dt><dd>Onbekend</dd></div></dl><div class="public-card-actions"><button class="button secondary compact" data-public-profile="${esc(profile.id)}">Bekijk bronprofiel</button><a href="${publicSourceUrl(profile.id)}" target="_blank" rel="noopener noreferrer">Wikidata ↗</a></div></article>`).join('') : `<div class="board-empty">${snapshot ? profiles.length ? 'Geen geladen profielen passen bij dit filter.' : 'Deze momentopname bevat geen toegelaten volwassen profielen. Bekijk de uitsluitingen hieronder.' : publicUI.supportsFetch ? 'Zoek eerst een echte speler of vul Wikidata-ID’s in en haal de brongegevens op.' : 'In deze preview is geen openbare momentopname ingebouwd. Open de lokale Node-app om brongegevens op te halen.'}</div>`}</div></section>` +
+    (snapshot ? `<section class="panel public-provenance"><h2>Herkomst en grenzen</h2><p>Wikidata · opgehaald ${esc(new Date(snapshot.retrievedAt).toLocaleString('nl-NL'))} · <a href="https://creativecommons.org/publicdomain/zero/1.0/" target="_blank" rel="noopener noreferrer">CC0 1.0</a>. De bronclaims zijn niet onafhankelijk geverifieerd; een recente ophaaldatum bevestigt geen actuele club of spelersprestatie.</p><p>Er zijn geen minuten, wedstrijdstatistieken, video-observaties, transferwaarden of talentscores in deze profielen.</p>${Array.isArray(snapshot.warnings) && snapshot.warnings.length ? `<ul>${snapshot.warnings.map(warning => `<li>${esc(warning)}</li>`).join('')}</ul>` : ''}${Array.isArray(snapshot.excluded) && snapshot.excluded.length ? `<details id="public-excluded"><summary>${snapshot.excluded.length} aangevraagde profielen niet opgenomen</summary><ul>${snapshot.excluded.map(item => `<li>${esc(item.id)}: ${esc(item.reason)}</li>`).join('')}</ul></details>` : ''}</section>` : '');
+}
+function showPublicProfile(id) {
+  const profile = publicProfiles().find(item => item.id === id); if (!profile) return;
+  const revision = Number.isSafeInteger(profile.revision) && profile.revision > 0 ? profile.revision : null;
+  const teams = Array.isArray(profile.teams) ? profile.teams.filter(team => publicId(team.id)) : [];
+  document.querySelector('#dossier-content').innerHTML = `<div class="dialog-top"><span class="eyebrow">OPENBAAR BRONPROFIEL · WIKIDATA CC0</span><button class="icon-button" data-close="dossier" aria-label="Dossier sluiten">${icon('close')}</button></div><div class="dossier-header"><span class="player-avatar huge variant-0">${esc(initials(profile.name))}</span><div><h2 id="dossier-title">${esc(profile.name)}</h2><p>${esc(id)} · ${publicAge(profile)} jaar op ophaaldatum</p><span class="status-tag neutral">Bronclaims · niet onafhankelijk geverifieerd</span></div></div><section class="dossier-section"><h3>Profielinformatie</h3><dl class="public-facts"><div><dt>Geboortedatum</dt><dd>${esc(profile.dob)}</dd></div><div><dt>Vermelde posities</dt><dd>${esc(publicLabels(profile.positions))}</dd></div><div><dt>Huidige club</dt><dd>Onbekend</dd></div><div><dt>Competitie</dt><dd>Onbekend</dd></div><div><dt>Speelminuten</dt><dd>Onbekend</dd></div><div><dt>Wedstrijden</dt><dd>Onbekend</dd></div></dl></section><section class="dossier-section"><h3>Vermelde teams in de bron</h3><p>Deze vermeldingen kunnen historisch of onvolledig zijn. Er wordt geen huidige club uit afgeleid.</p>${teams.length ? `<ul class="public-team-claims">${teams.map(team => `<li><strong>${esc(team.label)}</strong><span>Begin: ${esc(team.start || 'Onbekend')} · Einde: ${esc(team.end || 'Onbekend')}</span></li>`).join('')}</ul>` : '<p>Geen teamvermeldingen beschikbaar.</p>'}</section><section class="dossier-section"><h3>Wat blijft te onderzoeken?</h3><p>Verifieer de identiteit, huidige club, spelersrol en recente wedstrijdgegevens bij passende bronnen. Ontbrekende metingen leveren geen oordeel over talent, ontwikkeling of haalbaarheid op.</p></section><section class="dossier-section"><h3>Controleer de bron</h3><p><a href="${publicSourceUrl(id)}" target="_blank" rel="noopener noreferrer">Open ${esc(id)} op Wikidata ↗</a>${revision ? ` · <a href="https://www.wikidata.org/w/index.php?title=${id}&amp;oldid=${revision}" target="_blank" rel="noopener noreferrer">Bekijk opgehaalde revisie ${revision} ↗</a>` : ''}</p><p>Opgehaald: ${esc(new Date(profile.retrievedAt).toLocaleString('nl-NL'))}<br>Bron gewijzigd: ${esc(profile.sourceModifiedAt || 'Onbekend')}</p><p>CC0 betreft deze gestructureerde bronmetadata. Er zijn geen foto’s of wedstrijdbeelden opgenomen.</p></section>`;
+  dossierDialog.dataset.publicProfile = id; if (!dossierDialog.open) dossierDialog.showModal();
 }
 function heading(kicker, title, description, actions = '') { return `<div class="page-heading"><div><div class="eyebrow">${esc(kicker)}</div><h1>${esc(title)}</h1><p>${esc(description)}</p></div><div class="heading-actions">${actions}</div></div>`; }
 function empty(title, detail) { return `<div class="empty-state">${icon('radar')}<h3>${esc(title)}</h3><p>${esc(detail)}</p><button class="button secondary" data-action="reset">Toon alle spelers in deze set</button></div>`; }
@@ -409,11 +478,11 @@ function render() {
   if (view === 'account') renderAccount();
   else if (datasetLoading) main.innerHTML = '<section class="panel auth-panel" role="status"><h2>Clubgegevens ophalen…</h2><p>De vorige werkruimte is gesloten.</p></section>';
   else if (workspaceError) main.innerHTML = `<section class="panel auth-panel"><h2>Clubgegevens konden niet worden geladen.</h2><p class="import-error" role="alert">${esc(workspaceError)}</p><button class="button primary" data-action="workspace-retry">Opnieuw proberen</button>${isAuthenticated() ? '<button class="button secondary" data-view="account">Account &amp; werkruimtebeheer</button>' : ''}</section>`;
-  else ({ radar: () => renderRadar(), shortlist: () => renderRadar(true), tasks: renderTasks, coverage: renderCoverage, import: renderImport, brief: renderBrief, log: renderLog, account: renderAccount })[view]();
-  if (!canWrite() && !datasetLoading && view !== 'account') main.insertAdjacentHTML('afterbegin', `<div class="notice-card read-only-notice" role="status"><p>${environment === 'edge' ? 'Alleen-lezen synthetische demo. Open de lokale Node-app voor eigen scoutingwerk.' : 'Je hebt alleen leesrechten in deze club. Een eigenaar kan je de scoutrol geven om scoutingwerk en imports te wijzigen.'}</p></div>`);
+  else ({ radar: () => renderRadar(), 'public-profiles': renderPublicProfiles, shortlist: () => renderRadar(true), tasks: renderTasks, coverage: renderCoverage, import: renderImport, brief: renderBrief, log: renderLog, account: renderAccount })[view]();
+  if (!canWrite() && !datasetLoading && !['account', 'public-profiles'].includes(view)) main.insertAdjacentHTML('afterbegin', `<div class="notice-card read-only-notice" role="status"><p>${environment === 'edge' ? 'Alleen-lezen synthetische demo. Open de lokale Node-app voor eigen scoutingwerk.' : 'Je hebt alleen leesrechten in deze club. Een eigenaar kan je de scoutrol geven om scoutingwerk en imports te wijzigen.'}</p></div>`);
   updateCounts();
 }
-function navigate(next) { if (!viewLabels[next] || next === 'account' && !isAuthenticated()) return; if (next !== 'account') clearAccountTransient(); view = next; render(); if (next === 'import') void loadImportJobs(); if (next === 'account') void loadAccount(); window.scrollTo({ top: 0, behavior: 'instant' }); }
+function navigate(next) { if (!viewLabels[next] || next === 'account' && !isAuthenticated()) return; if (next !== 'account') clearAccountTransient(); clearPublicProfiles(); view = next; render(); if (next === 'import') void loadImportJobs(); if (next === 'account') void loadAccount(); if (next === 'public-profiles') void loadPublicProfiles(); window.scrollTo({ top: 0, behavior: 'instant' }); }
 function showDossier(id) {
   const d = buildDossier(catalog.players.find(p => p.id === id), catalog); if (!d) return;
   openPlayerId = id;
@@ -439,12 +508,24 @@ function applyFiltersFromControl(el) {
   const pos = el.type === 'search' ? el.selectionStart : null;
   render(); const next = main.querySelector(`[data-filter="${key}"]`); next?.focus(); if (pos !== null) next?.setSelectionRange(pos, pos);
 }
-main.addEventListener('input', event => { if (event.target.matches('input[type="search"][data-filter]')) applyFiltersFromControl(event.target); });
+main.addEventListener('input', event => {
+  const el = event.target;
+  if (el.matches('input[type="search"][data-filter]')) applyFiltersFromControl(el);
+  if (el.id === 'public-filter') { const pos = el.selectionStart; publicUI.filter = el.value; render(); const next = main.querySelector('#public-filter'); next?.focus(); if (pos !== null) next?.setSelectionRange(pos, pos); }
+  if (el.matches('#public-search-form [name="q"]')) publicUI.query = el.value;
+  if (el.matches('#public-load-form [name="ids"]')) publicUI.ids = el.value;
+});
 document.addEventListener('change', event => {
   const el = event.target;
   if (el.id === 'organization-select') { selectOrganization(el.value).catch(error => { if (!error.stale) notify(error.message, true); }); return; }
   if (el.id === 'dataset-select') { selectDataset(el.value).catch(error => { if (!error.stale) { updateCounts(); notify(error.message, true); } }); return; }
   if (el.id === 'import-file') { previewFile(el.files?.[0]); return; }
+  if (el.dataset.publicSelect) {
+    const selected = new Set(publicUI.ids.split(/[\s,;]+/).filter(publicId));
+    if (el.checked && selected.size >= 10 && !selected.has(el.dataset.publicSelect)) { el.checked = false; notify('Selecteer maximaal tien Wikidata-profielen.', true); return; }
+    el.checked ? selected.add(el.dataset.publicSelect) : selected.delete(el.dataset.publicSelect); publicUI.ids = [...selected].join(', ');
+    const field = main.querySelector('#public-load-form [name="ids"]'); if (field) field.value = publicUI.ids; return;
+  }
   if (el.matches('[data-filter]') && el.type !== 'search') applyFiltersFromControl(el);
   if (el.dataset.compare) {
     if (el.checked && comparison.size >= 3) { el.checked = false; return notify('Vergelijk maximaal drie profielen tegelijk.'); }
@@ -456,6 +537,7 @@ document.addEventListener('click', async event => {
   const el = event.target.closest('button, a.brand'); if (!el || el.disabled) return;
   const ctx = context();
   try {
+    if (el.dataset.publicProfile) { showPublicProfile(el.dataset.publicProfile); return; }
     if (el.dataset.action === 'session-retry') { environment = 'checking'; authError = ''; render(); await checkSession({ reload: true }); return; }
     if (el.dataset.action === 'workspace-retry') { await selectDataset(dataset, { remember: false }); return; }
     if (el.dataset.action === 'auth-mode') { authMode = el.dataset.mode; authError = ''; render(); return; }
@@ -541,6 +623,32 @@ document.addEventListener('click', async event => {
       openAction('Vergelijk bewijs, niet een talentscore', `<p class="form-note">${esc(datasetLabel())}. De statistieken zijn niet gecorrigeerd voor verschillen tussen competities of rollen.</p><div class="table-scroll"><table class="compare-table"><thead><tr><th>Onderdeel</th>${ds.map(d => `<th>${esc(d.player.name)}</th>`).join('')}</tr></thead><tbody>${rows.map(([label, get]) => `<tr><th>${label}</th>${ds.map(d => `<td>${esc(get(d))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`); return;
     }
   } catch (error) { if (!error.stale) notify(error.message || 'Actie mislukt.', true); } finally { if (el.isConnected) el.disabled = false; applyAccess(); }
+});
+document.addEventListener('submit', async event => {
+  const form = event.target;
+  if (!['public-search-form', 'public-load-form'].includes(form.id)) return;
+  event.preventDefault();
+  if (view !== 'public-profiles' || publicUI.busy || publicUI.loading || !publicUI.supportsFetch) return;
+  const data = Object.fromEntries(new FormData(form)), search = form.id === 'public-search-form';
+  if (!search && !canWrite()) { publicUI.error = 'Alleen een eigenaar of scout kan een nieuwe momentopname ophalen.'; render(); return; }
+  publicUI.controller?.abort(); publicUI.sequence++; publicUI.controller = new AbortController();
+  const ctx = publicContext(); publicUI.busy = true; publicUI.error = '';
+  if (search) { publicUI.query = String(data.q || '').trim(); publicUI.results = []; publicUI.searched = false; }
+  else publicUI.ids = String(data.ids || '').trim();
+  render();
+  try {
+    if (search) {
+      if (publicUI.query.length < 2 || publicUI.query.length > 120) throw new Error('Gebruik een zoeknaam van 2 tot 120 tekens.');
+      const result = await api(`/api/public-profiles/search?q=${encodeURIComponent(publicUI.query)}`, { signal: publicUI.controller.signal }); assertPublicContext(ctx);
+      publicUI.results = (Array.isArray(result.results) ? result.results : []).filter(item => publicId(item.id) && typeof item.label === 'string').slice(0, 20); publicUI.searched = true;
+    } else {
+      const ids = [...new Set(publicUI.ids.split(/[\s,;]+/).filter(Boolean))];
+      if (!ids.length || ids.length > 10 || !ids.every(publicId)) throw new Error('Vul één tot tien geldige Wikidata-ID’s in, bijvoorbeeld Q11571.');
+      const snapshot = await api('/api/public-profiles/load', { method: 'POST', data: { ids }, signal: publicUI.controller.signal }); assertPublicContext(ctx);
+      setPublicSnapshot(snapshot); publicUI.stale = false; publicUI.filter = ''; publicUI.results = []; publicUI.searched = false; publicUI.query = ''; publicUI.ids = '';
+    }
+  } catch (error) { if (!error.stale && ctx.epoch === epoch && ctx.sequence === publicUI.sequence && view === 'public-profiles') publicUI.error = error.message; }
+  finally { if (ctx.epoch === epoch && ctx.sequence === publicUI.sequence && view === 'public-profiles') { publicUI.busy = false; publicUI.controller = null; render(); } }
 });
 document.addEventListener('submit', async event => {
   const form = event.target;
@@ -710,7 +818,7 @@ for (const dialog of [dossierDialog, actionDialog]) dialog.addEventListener('cli
 document.querySelectorAll('[data-icon]').forEach(el => { el.innerHTML = icon(el.dataset.icon); });
 render();
 async function init() {
-  if (environment === 'standalone') { catalog = CATALOG; restoreDemo(); datasetLoading = false; render(); return; }
+  if (environment === 'standalone') { catalog = CATALOG; restoreDemo(); datasetLoading = false; render(); if (view === 'public-profiles') await loadPublicProfiles(); return; }
   await checkSession({ reload: true });
   sessionCheck = setInterval(() => { if (isAuthenticated() && !datasetLoading && mutationCount === 0 && !authBusy) void checkSession(); }, 45000);
 }

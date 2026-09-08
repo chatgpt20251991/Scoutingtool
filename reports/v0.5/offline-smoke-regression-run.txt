@@ -1,0 +1,11 @@
+PASS: standalone: 12 synthetic players and import dataset unavailable
+PASS: standalone: import view explains Node requirement without upload/confirm controls
+PASS: standalone: shortlist actions and browser persistence survive reload
+PASS: standalone: 390px mobile shortlist/import have no page overflow
+PASS: edge-handler: 12 synthetic players and import dataset unavailable
+PASS: edge-handler: import view explains Node requirement without upload/confirm controls
+PASS: edge-handler: shortlist actions and browser persistence survive reload
+PASS: edge-handler: 390px mobile shortlist/import have no page overflow
+PASS: edge-handler: synthetic-only catalog and import mutation rejected with HTTP 501
+PASS: standalone and edge-handler: no browser JavaScript page errors
+10 passed; 0 failed

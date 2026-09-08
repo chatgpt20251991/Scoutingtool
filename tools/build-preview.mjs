@@ -1,9 +1,6 @@
-import { readFile, writeFile, mkdir, cp } from 'node:fs/promises';
-const load = path => readFile(new URL('../' + path, import.meta.url), 'utf8');
-const [html, css, engine, fixtures, app] = await Promise.all(['public/index.html', 'public/styles.css', 'src/engine.mjs', 'src/fixtures.mjs', 'public/app.js'].map(load));
-const code = "window.OMNI_INLINE = true;\n" + fixtures.replaceAll('export const ', 'const ') + '\n' + engine.replaceAll('export const ', 'const ').replaceAll('export function ', 'function ') + '\n' + app.replace(/^import .+;\s*$/gm, '');
-const standalone = html.replace('<link rel="stylesheet" href="/styles.css">', `<style>${css}</style>`).replace('<link rel="icon" href="/favicon.svg" type="image/svg+xml">', '').replace('<script type="module" src="/app.js"></script>', `<script type="module">${code.replaceAll('</script', '<\\/script')}</script>`);
-await writeFile(new URL('../OmniScout-preview.html', import.meta.url), standalone);
+import { writeFile, mkdir, cp } from 'node:fs/promises';
+import { renderStandalone } from './standalone.mjs';
+await writeFile(new URL('../OmniScout-preview.html', import.meta.url), await renderStandalone());
 await mkdir(new URL('../dist/modules/', import.meta.url), { recursive: true });
 for (const name of ['index.html', 'styles.css', 'app.js', 'favicon.svg']) await cp(new URL('../public/' + name, import.meta.url), new URL('../dist/' + name, import.meta.url));
 for (const name of ['engine.mjs', 'fixtures.mjs']) await cp(new URL('../src/' + name, import.meta.url), new URL('../dist/modules/' + name, import.meta.url));

@@ -1,0 +1,13 @@
+✔ public profile requests are gated by accounts, club membership, write role and CSRF before provider calls (842.6023ms)
+✔ validated public snapshot is isolated by club, remains read-only and upstream errors retain prior data (728.1231ms)
+✔ revoking the fetching member while upstream is pending prevents result and cache write (628.372ms)
+✔ HTTP provider work is bounded and released after failures; invalid snapshots are never cached (926.0236ms)
+✔ future-dated profiles cannot grant adulthood or populate the club cache (1147.7726ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4467.1795

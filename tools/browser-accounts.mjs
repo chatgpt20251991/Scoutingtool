@@ -11,7 +11,7 @@ const require = createRequire(import.meta.url);
 const playwrightPackage = process.env.OMNISCOUT_PLAYWRIGHT_PATH || 'playwright';
 const { chromium } = require(playwrightPackage);
 const { expect } = require(join(playwrightPackage, 'test'));
-const reportDir = resolve('reports/v0.3');
+const reportDir = resolve(process.env.OMNISCOUT_REPORT_DIR || 'reports/v0.3');
 await mkdir(reportDir, { recursive: true });
 const sample = JSON.parse(await readFile(new URL('../samples/import-demo.json', import.meta.url), 'utf8'));
 const sampleA = structuredClone(sample), sampleB = structuredClone(sample);
