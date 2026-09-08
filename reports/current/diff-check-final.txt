@@ -1,0 +1,17 @@
+warning: in the working copy of '.github/workflows/ci.yml', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'OmniScout-preview.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'START_HERE_CODEX.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'dist/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'dist/modules/engine.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'dist/styles.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/IMPLEMENTATION_STATUS.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/NEXT_CODEX_TASK.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'handoff/TRANSFER_STATUS.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'handoff/WORKER_OPDRACHTEN.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'package-lock.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'public/index.html', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'public/styles.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/engine.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/server.mjs', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/store.mjs', LF will be replaced by CRLF the next time Git touches it

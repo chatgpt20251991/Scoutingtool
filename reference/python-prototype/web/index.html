@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="nl">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="description" content="Omni-Scout lokale scoutingwerkplek. Wereldradar, controleerbare dossiers en onderzoeksvragen."><title>Omni-Scout · Talent intelligence</title><link rel="stylesheet" href="/style.css"><script defer src="/app.js"></script></head>
+<body>
+<a href="#main" class="skip">Naar inhoud</a>
+<aside class="sidebar">
+<a class="brand" href="#radar" aria-label="Omni Scout start"><span class="brand-symbol"><i></i></span><span>OMNI<span class="brand-light">SCOUT</span><small>RECRUITMENT INTELLIGENCE</small></span></a>
+<div class="workspace"><span class="club-icon">SC</span><div><strong id="club-name">Mijn scoutingclub</strong><small>Lokale werkruimte</small></div><span class="tiny-dot"></span></div>
+<div class="nav-label">WERKRUIMTE</div>
+<nav aria-label="Hoofdnavigatie">
+<button class="nav-item active" data-view="radar"><span>◎</span>Wereldradar<span class="nav-tag">01</span></button>
+<button class="nav-item" data-view="coverage"><span>▦</span>Datadekking</button>
+<button class="nav-item" data-view="tasks"><span>☷</span>Onderzoeksopdrachten<span id="task-count" class="nav-tag">0</span></button>
+<button class="nav-item" data-view="log"><span>↺</span>Beslislogboek</button>
+<button class="nav-item" data-view="brief"><span>⌘</span>Clubvraag</button>
+<button class="nav-item" data-view="imports"><span>⇅</span>Bronnen & imports</button>
+</nav>
+<div class="sidebar-bottom"><span class="status-pill">LOKALE ALPHA</span><p>Van opvallende cijfers<br>naar de juiste onderzoeksvraag.</p><small>v0.1.0 · Geen live feeds</small></div>
+</aside>
+<div class="app-shell">
+<header class="topbar"><span>RECRUITMENT / <strong id="breadcrumb">WERELDRADAR</strong></span><div><span class="local-dot"></span> Lokaal <button id="refresh" class="icon-button" aria-label="Gegevens vernieuwen">↻</button></div></header>
+<main id="main" tabindex="-1">
+<div id="mode-banner" class="mode-banner">Gegevens laden…</div>
+<section id="radar-view" class="view">
+<div class="page-heading"><div><p class="eyebrow">ZIE VERDER. ONDERZOEK GERICHT.</p><h1>Talent begint niet<br>bij de hoogste divisie<span>.</span></h1><p class="lead">Ontdek wie nader onderzoek verdient. Van lagere divisies<br class="desktop-only"> tot je volgende shortlist, met bewijs bij iedere stap.</p></div><div class="radar-visual" aria-hidden="true"><div class="radar-ring r1"></div><div class="radar-ring r2"></div><div class="radar-ring r3"></div><span class="radar-label">ONTDEKKING<br><b>≠ VOORSPELLING</b></span><i class="radar-point p1"></i><i class="radar-point p2"></i><i class="radar-point p3"></i></div></div>
+<div id="stats" class="stats-grid"></div>
+<div class="section-heading"><h2>Jouw wereldwijde blik</h2><span class="muted">Overzicht van beschikbare bronrecords</span></div>
+<div id="continents" class="continent-grid"></div>
+<div class="panel radar-panel">
+<div class="panel-title"><div><h2>Ontdek nieuwe onderzoekskandidaten</h2><p>Geen universele talentscore. Iedere kandidaat blijft controleerbaar.</p></div><button class="quiet-button" id="reset-filters">Wis filters</button></div>
+<div class="filters"><label class="search-label">Speler, club of competitie<input id="search" type="search" placeholder="Zoek zonder dat je al een naam kent…"></label><label>Land<select id="country"><option value="">Alle landen</option></select></label><label>Rol<select id="role"><option value="">Alle rollen</option><option value="GK">Doelman</option><option value="CB">Centrale verdediger</option><option value="CM">Middenvelder</option><option value="WG">Vleugelspeler</option><option value="ST">Spits</option></select></label><label>Niveau<select id="level"><option value="">Alle niveaus</option><option value="3">Niveau 3 en lager</option><option value="4">Niveau 4 en lager</option><option value="5">Niveau 5 en lager</option></select></label><label>Brondata<select id="mode"><option value="demo">Alleen demo</option><option value="real">Alleen eigen imports</option></select></label></div>
+<div class="filter-secondary"><label class="check-label"><input id="unknown" type="checkbox">Nieuw voor deze werkruimte</label><label>Leeftijd t/m <input id="age-max" type="number" min="18" max="60" value="30"></label><label>Min. minuten <input id="min-minutes" type="number" min="0" max="15000" placeholder="Alle"></label><label>Sorteren <select id="sort"><option value="name">Naam</option><option value="minutes">Meeste minuten</option><option value="level">Laagste competitieniveau</option><option value="age">Jongste eerst</option></select></label></div>
+<div class="track-tabs" role="tablist" aria-label="Bewijscategorie"><button role="tab" aria-selected="true" class="track-tab active" data-track="all">Alle kandidaten <span id="count-all">0</span></button><button role="tab" aria-selected="false" class="track-tab" data-track="documented">Meer gedocumenteerd <span id="count-documented">0</span></button><button role="tab" aria-selected="false" class="track-tab" data-track="explore">Eerst verkennen <span id="count-explore">0</span></button></div>
+<div id="results-meta" class="results-meta"></div><div id="players" class="player-grid"></div><div class="pagination"><button id="prev" class="quiet-button">← Vorige</button><span id="page-number"></span><button id="next" class="quiet-button">Volgende →</button></div>
+</div>
+<div class="bottom-note"><span>↗</span><p><strong>Een blinde vlek is geen lege talentenpool.</strong> Ontbrekende statistieken blijven onbekend. De radar laat zien waar aanvullend onderzoek nodig is.</p><button class="quiet-button" data-view="coverage">Bekijk dekking →</button></div>
+</section>
+<section id="coverage-view" class="view hidden"></section>
+<section id="tasks-view" class="view hidden"></section>
+<section id="log-view" class="view hidden"></section>
+<section id="brief-view" class="view hidden"></section>
+<section id="imports-view" class="view hidden"></section>
+<footer>Omni-Scout · Lokale single-club alpha · Geen autonome transferbeslissingen <span id="updated"></span></footer>
+</main>
+</div>
+<dialog id="dossier" aria-labelledby="dossier-title"><button id="close-dossier" class="dialog-close" aria-label="Dossier sluiten">×</button><div id="dossier-content"></div></dialog>
+<div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+</body></html>

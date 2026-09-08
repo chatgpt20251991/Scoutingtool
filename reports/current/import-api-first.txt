@@ -1,0 +1,12 @@
+✔ import preview writes nothing; malformed, oversized and unauthorized imports leave state unchanged (115.1533ms)
+✔ import, dossier, shortlist, research, CSV, duplicate import and restart use one durable isolated workspace (160.8953ms)
+✔ an importer cannot bypass separate export rights through CSV or workspace JSON (22.0186ms)
+✔ filesystem replacement failure preserves the previous in-memory and durable state and allows recovery (20.8491ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 484.958

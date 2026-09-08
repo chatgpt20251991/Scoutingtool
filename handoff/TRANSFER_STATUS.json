@@ -1,0 +1,28 @@
+{
+  "date": "2026-09-08",
+  "repository": "chatgpt20251991/Scoutingtool",
+  "repository_visibility": "public",
+  "branch": "codex/omniscout-handoff",
+  "original_import_commit_local": "bf128367c69c6a8b2cb539f9fcae84b33e2f51d1",
+  "implementation": "Local Node v0.2.0 import, durable queue, isolated scouting workflow and rollback implemented",
+  "python_reference": "Preserved unchanged",
+  "development_workers": [
+    {"task": "/root/worker_a_import", "package": "A", "status": "completed"},
+    {"task": "/root/worker_b_queue", "package": "B and independent D follow-up", "status": "completed"},
+    {"task": "/root/worker_c_ui", "package": "C and offline smoke follow-up", "status": "completed"}
+  ],
+  "codex_started": true,
+  "worker_started": true,
+  "github_commit": null,
+  "github_pr": null,
+  "github_actions_run": null,
+  "github_write": {"success": false, "status": 403, "message": "Resource not accessible by integration", "operation": "create_blob"},
+  "git_push": {"success": false, "message": "could not read Username for https://github.com: terminal prompts disabled"},
+  "tests": {"node_passed": 101, "python_passed": 62, "native_browser_phases_passed": 10, "offline_edge_smoke_passed": 10},
+  "raw_evidence": "reports/current/",
+  "deployment_url": null,
+  "cloud_runtime_started": false,
+  "live_data_connected": false,
+  "llm_provider_added": false,
+  "note": "The final local commit is reported after committing in the delivery report; this file is not evidence of GitHub publication."
+}

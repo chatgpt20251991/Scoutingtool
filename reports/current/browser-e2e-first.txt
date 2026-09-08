@@ -1,0 +1,2 @@
+FAIL: TypeError: expect is not a function
+    at file:///C:/Users/Han23/Documents/Codex/2026-09-08/lees-start-here-codex-md-en/work/Scoutingtool/tools/browser-e2e.mjs:36:9

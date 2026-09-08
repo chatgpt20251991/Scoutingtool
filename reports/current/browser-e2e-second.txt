@@ -1,0 +1,8 @@
+PASS: Native Edge/Chromium navigation loads 12 demo profiles through the running Node backend
+PASS: Malformed JSON, unsupported schema and oversize upload show errors and create no snapshots
+PASS: Preview shows counts/rights/seasons without writes; confirmation displays actual succeeded backend job
+FAIL: locator.click: Timeout 30000ms exceeded.
+Call log:
+  - waiting for locator('[data-open="p01"]').first()
+
+    at C:\Users\Han23\Documents\Codex\2026-09-08\lees-start-here-codex-md-en\work\Scoutingtool\tools\browser-e2e.mjs:70:51

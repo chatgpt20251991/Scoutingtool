@@ -1,0 +1,14 @@
+PASS: Desktop renders all 12 labelled fixtures without page overflow
+PASS: Search and unknown-value presentation
+PASS: Dossier shows counterevidence, provenance and missing information
+PASS: Research question creates an internal task in temporary memory
+PASS: Research result is mandatory and completing it updates the board
+PASS: Shortlist survives navigation within the current in-memory session
+PASS: Evidence comparison and native dialog keyboard close
+PASS: Structured club brief saves and applies role and age filters
+PASS: Coverage register and disconnected-competition empty state
+PASS: Decision and task changes are visible in the local audit log
+PASS: 390px mobile filtering and dossier are usable without document overflow
+PASS: Self-contained HTML renders from memory without external assets or network requests
+PASS: No uncaught JavaScript errors in tested browser workflows
+{"passed": 13, "errors": []}
